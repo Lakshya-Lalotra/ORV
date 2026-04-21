@@ -1,0 +1,9 @@
+# Optional: use content/prologue.txt for intro lines only (one screen line per row).
+# Optional whisper after a TAB on the same row. Lines starting with # are ignored.
+# Reveal matrix lines stay in content/prologue.json unless you add them there only.
+
+[ You are not the only one alive? ]	— a lonely voice
+[ I am alone. ]	— are you really? Alone?
+Why did you come here, if you are alone?
+[ I… ]
+[ You… who are you? ]

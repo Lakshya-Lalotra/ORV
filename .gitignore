@@ -50,6 +50,7 @@ next-env.d.ts
 # Local licensed PDFs, OCR text, and panel URL maps (do not commit)
 /content/*.pdf
 /content/*.txt
+!/content/prologue.example.txt
 /content/*.epub
 /content/manhwa-map.json
 # Local panel masters (often large); use npm run build:manhwa-map -- --sync → public/panels
