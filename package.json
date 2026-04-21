@@ -23,6 +23,7 @@
     "ingest:side": "tsx scripts/ingest-side-epub.ts",
     "branding:wiki-logo": "tsx scripts/strip-orv-logo-bg.ts",
     "branding:webtoon-cover": "tsx scripts/fetch-webtoon-cover.ts",
+    "upload:r2-prologue": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/upload-prologue-r2.ps1",
     "postinstall": "prisma generate"
   },
   "prisma": {
