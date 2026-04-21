@@ -1,4 +1,4 @@
-﻿-- CreateEnum
+-- CreateEnum
 CREATE TYPE "ChapterMood" AS ENUM ('calm', 'tension', 'chaos');
 
 -- CreateEnum
@@ -119,4 +119,3 @@ ALTER TABLE "Segment" ADD CONSTRAINT "Segment_chapterId_fkey" FOREIGN KEY ("chap
 
 -- AddForeignKey
 ALTER TABLE "ManhwaPanel" ADD CONSTRAINT "ManhwaPanel_segmentId_fkey" FOREIGN KEY ("segmentId") REFERENCES "Segment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
