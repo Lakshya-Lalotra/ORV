@@ -4,23 +4,56 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "prisma db seed",
+    "setup": "tsx scripts/setup.ts",
+    "ingest:orv": "tsx scripts/ingest-orv-pdf.ts",
+    "ingest:txt": "tsx scripts/ingest-orv-txt.ts",
+    "ingest:txt:ia": "tsx scripts/ingest-orv-txt.ts --from-archive",
+    "ingest:epub": "tsx scripts/ingest-orv-epub.ts",
+    "ingest:novel-epub": "tsx scripts/ingest-novel-epub.ts",
+    "ingest:bittu": "tsx scripts/ingest-bittu-github.ts",
+    "build:manhwa-map": "tsx scripts/build-manhwa-map-from-folders.ts",
+    "scrape:manhwa": "tsx scripts/scrape-manhwa-chapter.ts",
+    "scrape:manhwa:new": "tsx scripts/scrape-manhwa-incremental.ts",
+    "ingest:sequel": "tsx scripts/ingest-sequel-epub.ts",
+    "ingest:side": "tsx scripts/ingest-side-epub.ts",
+    "branding:wiki-logo": "tsx scripts/strip-orv-logo-bg.ts",
+    "branding:webtoon-cover": "tsx scripts/fetch-webtoon-cover.ts",
+    "postinstall": "prisma generate"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@gsap/react": "^2.1.2",
+    "@prisma/client": "^6.19.0",
+    "dotenv": "^17.4.1",
+    "framer-motion": "^12.38.0",
+    "gsap": "^3.15.0",
     "next": "16.2.3",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "axios": "^1.15.0",
+    "cheerio": "^1.2.0",
+    "epub2": "^3.0.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.3",
+    "pdf-parse": "^2.4.5",
+    "prisma": "^6.19.0",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

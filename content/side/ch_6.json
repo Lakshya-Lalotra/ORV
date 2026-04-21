@@ -1,0 +1,23 @@
+{
+  "number": 6,
+  "slug": "orv-side-ch-6",
+  "title": "THE END",
+  "order": 6,
+  "segments": [
+    {
+      "kind": "line",
+      "text": "Want to know what happens next? Continue reading the side stories!"
+    },
+    {
+      "kind": "divider",
+      "text": "---"
+    },
+    {
+      "kind": "line",
+      "text": "Thank you for reading."
+    }
+  ],
+  "authorNote": [],
+  "sourceUrl": "epub:orv_side.epub#afterword",
+  "scrapedAt": "2026-04-21T13:12:01.877Z"
+}

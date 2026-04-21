@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum ChapterMood {
+  calm
+  tension
+  chaos
+}
+
+enum SegmentKind {
+  narration
+  dialogue
+  system
+  action
+}
+
+enum AudioKind {
+  ambient
+  sfx_system
+  sfx_action
+  ui_hover
+  voice
+  music
+}
+
+model Chapter {
+  id        String      @id @default(cuid())
+  slug      String      @unique
+  title     String
+  order     Int         @default(0)
+  mood      ChapterMood @default(calm)
+  intensity Int         @default(30)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  segments  Segment[]
+}
+
+model Segment {
+  id           String        @id @default(cuid())
+  chapterId    String
+  chapter      Chapter       @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  orderIndex   Int
+  kind         SegmentKind   @default(narration)
+  text         String
+  keywordsJson String        @default("[]")
+  panel        ManhwaPanel?
+
+  @@index([chapterId, orderIndex])
+}
+
+model ManhwaPanel {
+  id        String  @id @default(cuid())
+  segmentId String  @unique
+  segment   Segment @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  imageUrl  String
+  alt       String  @default("")
+}
+
+model AudioAsset {
+  id        String    @id @default(cuid())
+  key       String    @unique
+  kind      AudioKind
+  url       String
+  label     String?
+  createdAt DateTime  @default(now())
+}
+
+model ReadingProgress {
+  id           String   @id @default(cuid())
+  sessionId    String
+  chapterSlug  String
+  segmentIndex Int      @default(0)
+  scrollRatio  Float    @default(0)
+  updatedAt    DateTime @updatedAt
+
+  @@unique([sessionId, chapterSlug])
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  sessionId String
+  event     String
+  metaJson  String   @default("{}")
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([event])
+}
+
+/// Server-side auth audit (optional). Does not store reader names — only success/fail + hashed IP + UA + device hint.
+model ReaderAuthAudit {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  success    Boolean
+  ipHash     String?
+  userAgent  String?
+  deviceHint String?
+
+  @@index([createdAt])
+}

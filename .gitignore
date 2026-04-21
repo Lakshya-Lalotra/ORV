@@ -39,3 +39,23 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local SQLite database files (migrations stay tracked)
+/prisma/dev.db
+/prisma/**/*.db
+
+/src/generated/prisma
+
+# Local licensed PDFs, OCR text, and panel URL maps (do not commit)
+/content/*.pdf
+/content/*.txt
+/content/*.epub
+/content/manhwa-map.json
+# Local panel masters (often large); use npm run build:manhwa-map -- --sync → public/panels
+/content/panels
+# Published panel JPEGs (can be GB+); deploy via CI/scrape or sync separately — do not commit
+/public/panels
+
+# local next logs
+.next-start*.log
+tmp_*.html
