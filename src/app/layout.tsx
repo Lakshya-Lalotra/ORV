@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Instrument_Serif, Share_Tech_Mono } from "next/font/google";
 import { ReaderProvider } from "@/context/ReaderContext";
 import { SystemOverlayProvider } from "@/components/SystemOverlay";
-import { AuthTestResetter } from "@/components/AuthTestResetter";
 import "./globals.css";
 
 const serif = Instrument_Serif({
@@ -39,10 +38,7 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-[var(--background)] font-sans text-[var(--foreground)]">
         <SystemOverlayProvider>
-          <ReaderProvider>
-            <AuthTestResetter />
-            {children}
-          </ReaderProvider>
+          <ReaderProvider>{children}</ReaderProvider>
         </SystemOverlayProvider>
       </body>
     </html>

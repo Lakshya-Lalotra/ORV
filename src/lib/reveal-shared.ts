@@ -1,8 +1,5 @@
 /**
- * Shared constants, types and helpers for the post-auth reveal scene.
- *
- * Both the production `AuthGate` and the `/test/reveal` dev page import
- * from here so tuning happens in one place.
+ * Shared constants, types and helpers for the post-auth reveal scene (`AuthGate`).
  */
 
 export const REVEAL_VIDEO_SRC = "/Video/gilded-lily-animation.mp4";

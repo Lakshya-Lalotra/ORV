@@ -11,7 +11,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  if (pathname.startsWith("/auth") || pathname.startsWith("/test")) {
+  if (pathname.startsWith("/auth")) {
     return NextResponse.next();
   }
 
