@@ -1,0 +1,45 @@
+{
+  "intro": [
+    { "text": "[ You are not the only one alive? ]", "whisper": "— a lonely voice" },
+    { "text": "[ I am alone. ]", "whisper": "— are you really? Alone?" },
+    { "text": "Why did you come here, if you are alone?" },
+    { "text": "[ I… ]" },
+    { "text": "[ You… who are you? ]" }
+  ],
+  "reveal": [
+    { "text": "[ Welcome, {{readerName}} ]", "emphasis": "soft", "weight": 2 },
+    { "text": "[ This story is for just one reader. ]", "emphasis": "wobble", "weight": 3 },
+    { "text": "[ Once upon a page… ]", "emphasis": "soft", "weight": 2 },
+    { "text": "[ There was a single reader. ]", "emphasis": "soft", "weight": 2 },
+    { "text": "[ Who followed a story no one else believed in. ]", "weight": 3 },
+    {
+      "text": "[ Three years. One thousand, one hundred and nineteen chapters. ]",
+      "weight": 3
+    },
+    { "text": "[ And only you finished it. ]", "emphasis": "wobble", "weight": 3 },
+    { "text": "[ Then, one morning, the world changed. ]", "weight": 3 },
+    { "text": "[ The author sent the last chapter as a gift. ]", "weight": 3 },
+    { "text": "[ And the story turned its head… ]", "emphasis": "soft", "weight": 2 },
+    { "text": "[ …and began looking back. ]", "emphasis": "wobble", "weight": 3 },
+    {
+      "text": "[ ☆ Scenario #0 — A reader is chosen ☆ ]",
+      "emphasis": "command",
+      "weight": 4
+    },
+    { "text": "[ You remember, don't you. ]", "emphasis": "soft", "weight": 3 },
+    { "text": "[ The subway. The flicker. The blue system window. ]", "weight": 3 },
+    {
+      "text": "[ Main Scenario #1 — ‹Flight Response› ]",
+      "emphasis": "command",
+      "weight": 4
+    },
+    { "text": "[ …but you are not afraid. ]", "weight": 3 },
+    {
+      "text": "[ Because you have already read the ending. ]",
+      "emphasis": "wobble",
+      "weight": 3
+    },
+    { "text": "[ Haven't you? ]", "emphasis": "breathe", "weight": 3 },
+    { "text": "[ Welcome back, Reader. ]", "emphasis": "wobble", "weight": 4 }
+  ]
+}

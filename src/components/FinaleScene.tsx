@@ -31,6 +31,8 @@ type Props = {
   tapLabel?: string;
   /** Optional top bookend override. */
   topLabel?: string;
+  /** Hero illustration URL (defaults to `FINALE_HERO_ART` under `public/` or blob). */
+  heroArtSrc?: string;
 };
 
 /** Tiny deterministic PRNG so mote positions are stable per mount. */
@@ -49,6 +51,7 @@ export function FinaleScene({
   tapReady,
   tapLabel = "[ Tap to begin the story. ]",
   topLabel = "[ The prologue ends. ]",
+  heroArtSrc = FINALE_HERO_ART,
 }: Props) {
   const stageRef = useRef<HTMLDivElement | null>(null);
 
@@ -231,7 +234,7 @@ export function FinaleScene({
       {/* Right 66% — the two-figure key art. */}
       <div data-finale-hero className="orv-finale-hero">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={FINALE_HERO_ART} alt="" draggable={false} />
+        <img src={heroArtSrc} alt="" draggable={false} />
       </div>
 
       {tapReady ? (

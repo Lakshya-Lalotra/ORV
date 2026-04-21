@@ -20,20 +20,22 @@ import {
 import { playGameStartJingle, resumeAudio } from "@/lib/audio-engine";
 import { FinaleScene } from "@/components/FinaleScene";
 import { PROLOGUE_COOKIE } from "@/lib/orv-auth-policy";
+import type { ProloguePayload } from "@/lib/prologue-types";
+import type { RevealMediaUrls } from "@/lib/reveal-media";
+import { getRevealMediaUrls } from "@/lib/reveal-media";
 import {
-  FINALE_HERO_ART,
+  type RevealStep,
+  buildRevealScript,
+  emphasisClass,
   FINALE_LEAD_IN_MS,
   FINALE_TAP_DELAY_MS,
-  REVEAL_AUDIO_SRC,
+  hydrateRevealScriptPlaceholders,
   REVEAL_OUTRO_BUFFER_S,
-  REVEAL_VIDEO_SRC,
   SONG_INITIAL_DELAY_MS,
   SONG_INITIAL_VOLUME,
   SONG_RAMP_MS,
   SONG_START_TIME_S,
   SONG_TARGET_VOLUME,
-  buildRevealScript,
-  emphasisClass,
 } from "@/lib/reveal-shared";
 import { getOrCreateDeviceId } from "@/lib/device-id";
 
@@ -46,7 +48,7 @@ type Phase = "tap" | "intro" | "prompt" | "unlocking" | "reveal";
 
 type IntroStep = { text: string; whisper?: string };
 
-const INTRO_STEPS: IntroStep[] = [
+const DEFAULT_INTRO_STEPS: IntroStep[] = [
   { text: "[ You are not the only one alive? ]", whisper: "— a lonely voice" },
   { text: "[ I am alone. ]", whisper: "— are you really? Alone?" },
   { text: "Why did you come here, if you are alone?" },
@@ -80,7 +82,14 @@ function postAuthDestination(next: string | null): string {
   return next;
 }
 
-export function AuthGate() {
+type AuthGateProps = {
+  /** From `content/prologue.json` or `content/prologue.txt` (server); null uses defaults below. */
+  prologue?: ProloguePayload | null;
+  /** Video / audio / finale art URLs (blob or `public/`). */
+  media?: RevealMediaUrls | null;
+};
+
+export function AuthGate({ prologue = null, media: mediaProp = null }: AuthGateProps) {
   const router = useRouter();
   const search = useSearchParams();
   const [value, setValue] = useState("");
@@ -104,10 +113,29 @@ export function AuthGate() {
   const revealTimersRef = useRef<number[]>([]);
   const rampIntervalRef = useRef<number | null>(null);
 
-  const script = useMemo(
-    () => buildRevealScript(readerName || "Reader"),
-    [readerName],
+  const media = useMemo(
+    () => mediaProp ?? getRevealMediaUrls(),
+    [mediaProp],
   );
+
+  const introSteps = useMemo(
+    () =>
+      prologue?.intro?.length ? prologue.intro : DEFAULT_INTRO_STEPS,
+    [prologue?.intro],
+  );
+
+  const script = useMemo(() => {
+    const name = readerName || "Reader";
+    if (prologue?.reveal?.length) {
+      const steps: RevealStep[] = prologue.reveal.map((r) => ({
+        text: r.text,
+        emphasis: r.emphasis,
+        weight: r.weight,
+      }));
+      return hydrateRevealScriptPlaceholders(steps, name);
+    }
+    return buildRevealScript(name);
+  }, [readerName, prologue?.reveal]);
 
   useEffect(() => {
     setIsTouch(
@@ -119,7 +147,7 @@ export function AuthGate() {
   // Intro phase pacing
   useEffect(() => {
     if (phase !== "intro") return;
-    const step = INTRO_STEPS[introStep];
+    const step = introSteps[introStep];
     if (!step) {
       setPhase("prompt");
       return;
@@ -147,7 +175,7 @@ export function AuthGate() {
     timers.push(
       window.setTimeout(
         () => {
-          if (introStep + 1 < INTRO_STEPS.length) {
+          if (introStep + 1 < introSteps.length) {
             setIntroStep((s) => s + 1);
           } else {
             setPhase("prompt");
@@ -159,7 +187,7 @@ export function AuthGate() {
     return () => {
       for (const id of timers) window.clearTimeout(id);
     };
-  }, [phase, introStep]);
+  }, [phase, introStep, introSteps]);
 
   // Unlocking → reveal handoff
   useEffect(() => {
@@ -512,7 +540,7 @@ export function AuthGate() {
     >
       <video
         ref={videoRef}
-        src={REVEAL_VIDEO_SRC}
+        src={media.videoSrc}
         muted
         playsInline
         preload="auto"
@@ -529,7 +557,7 @@ export function AuthGate() {
       />
       <audio
         ref={audioRef}
-        src={REVEAL_AUDIO_SRC}
+        src={media.audioSrc}
         preload="auto"
         className="hidden"
       />
@@ -601,7 +629,7 @@ export function AuthGate() {
               }}
               className="orv-intro-text text-lg font-medium md:text-2xl"
             >
-              {INTRO_STEPS[introStep]?.text}
+              {introSteps[introStep]?.text}
             </motion.p>
             <AnimatePresence>
               {introShowWhisper && !introExiting ? (
@@ -613,7 +641,7 @@ export function AuthGate() {
                   transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
                   className="orv-intro-whisper mt-5 text-sm md:text-base"
                 >
-                  {INTRO_STEPS[introStep]?.whisper}
+                  {introSteps[introStep]?.whisper}
                 </motion.p>
               ) : null}
             </AnimatePresence>
@@ -790,7 +818,7 @@ export function AuthGate() {
               className="pointer-events-none absolute h-0 w-0 overflow-hidden opacity-0"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={FINALE_HERO_ART} alt="" />
+              <img src={media.finaleHeroSrc} alt="" />
             </div>
 
             <div
@@ -821,6 +849,7 @@ export function AuthGate() {
                 <FinaleScene
                   tapReady={tapReady}
                   tapLabel={`[ ${continueLabel}. ]`}
+                  heroArtSrc={media.finaleHeroSrc}
                 />
               </div>
             ) : null}

@@ -2,6 +2,7 @@
  * Shared constants, types and helpers for the post-auth reveal scene (`AuthGate`).
  */
 
+/** Default paths under `public/` or under blob base — use `getRevealMediaUrls()` at runtime for deployed URLs. */
 export const REVEAL_VIDEO_SRC = "/Video/gilded-lily-animation.mp4";
 export const REVEAL_AUDIO_SRC = "/audio/gilded-lily.mp3";
 
@@ -37,6 +38,17 @@ export type RevealStep = {
    */
   weight?: number;
 };
+
+export function hydrateRevealScriptPlaceholders(
+  steps: RevealStep[],
+  readerName: string,
+): RevealStep[] {
+  const safe = readerName.trim() || "Reader";
+  return steps.map((s) => ({
+    ...s,
+    text: s.text.replace(/\{\{readerName\}\}/g, safe),
+  }));
+}
 
 export function buildRevealScript(readerName: string): RevealStep[] {
   return [

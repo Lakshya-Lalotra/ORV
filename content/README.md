@@ -92,3 +92,9 @@ This project **does not** download from WEBTOON or other sites. If you have perm
 Optional: **`ORV_PUBLIC_ORIGIN=https://your.domain`** when running `build:manhwa-map` to emit absolute URLs instead of `/panels/...`.
 
 Ingest **replaces** all chapters; demo rows are removed when import succeeds.
+
+## Auth prologue copy (`/auth`)
+
+- **`prologue.json`** — intro + reveal matrix (see repo). Edit or replace; use `{{readerName}}` in reveal lines where needed.
+- **`prologue.txt`** (optional) — intro only, one line per step; optional whisper after a **TAB**. Used if you prefer not to use JSON for intro; see **`prologue.example.txt`**.
+- Prologue **video / audio / finale hero** URLs: set **`NEXT_PUBLIC_ORV_BLOB_BASE`** or per-asset URLs in `.env` (see `.env.example`) so media can live on blob storage instead of `public/`.
