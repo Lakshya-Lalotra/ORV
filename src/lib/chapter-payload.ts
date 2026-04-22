@@ -1,6 +1,13 @@
 import type { Chapter, ChapterMood, ManhwaPanel, Segment } from "@prisma/client";
 import { fetchContentJson } from "@/lib/content-fetch";
 import { publicAssetUrl } from "@/lib/orv-blob-url";
+import { corpusChapterToPayload } from "@/lib/corpus-chapter-payload";
+import {
+  loadCorpusChapter,
+  loadCorpusChapterBySlug,
+  loadCorpusIndex,
+} from "@/lib/epub-corpus.server";
+import type { SequelChapter } from "@/lib/sequel-content-types";
 import type { ChapterIndexEntry, ChapterPayload, KeywordDef } from "./types";
 
 type ChapterWithSegments = Chapter & {
@@ -28,6 +35,29 @@ function syntheticMoodForOrder(order: number): ChapterMood {
   const cycle: ChapterMood[] = ["calm", "tension", "chaos"];
   const idx = Math.abs(order) % cycle.length;
   return cycle[idx]!;
+}
+
+/** Matches the old `ingest:novel-epub` formulas so `/chapters` looks the same. */
+function orvChapterMoodFor(num: number): ChapterMood {
+  const cycle: ChapterMood[] = ["calm", "tension", "chaos"];
+  return cycle[(num - 1 + cycle.length) % cycle.length]!;
+}
+
+function orvChapterIntensityFor(num: number): number {
+  return Math.min(95, 35 + (num % 6) * 9);
+}
+
+function mergeManhwaPanels(
+  slug: string,
+  map: Record<string, string[]>,
+): ChapterPayload["manhwaPanels"] {
+  const urls = map[slug];
+  if (!urls?.length) return [];
+  return urls.map((imageUrl, index) => ({
+    id: `${slug}-panel-${index + 1}`,
+    imageUrl: publicAssetUrl(imageUrl),
+    alt: `${slug} panel ${index + 1}`,
+  }));
 }
 
 function parseKeywords(raw: string): KeywordDef[] {
@@ -156,4 +186,114 @@ export async function buildChapterPayload(
     manhwaPanels,
     segments,
   };
+}
+
+// ---------- ORV main novel: direct-from-EPUB loaders ----------
+
+export type OrvChapterIndexRow = {
+  id: string;
+  slug: string;
+  title: string;
+  mood: ChapterMood;
+  intensity: number;
+  order: number;
+  segmentCount: number;
+};
+
+export type OrvChapterIndexEntry = ChapterIndexEntry & { order: number };
+
+/**
+ * Landing rows for `/chapters`. The novel EPUB is parsed lazily: here we
+ * only read the spine index (no chapter body parsing), so the listing
+ * renders fast. Segment counts are omitted (shown as 0) because counting
+ * would require parsing every chapter; the UI tolerates this.
+ */
+export async function loadOrvChapterIndexRows(): Promise<OrvChapterIndexRow[]> {
+  const index = await loadCorpusIndex("orv");
+  return index.map((e) => ({
+    id: `orv-${e.slug}`,
+    slug: e.slug,
+    title: e.title,
+    mood: orvChapterMoodFor(e.number),
+    intensity: orvChapterIntensityFor(e.number),
+    order: e.order,
+    segmentCount: 0,
+  }));
+}
+
+export async function loadOrvChapterIndexEntries(): Promise<OrvChapterIndexEntry[]> {
+  const index = await loadCorpusIndex("orv");
+  return index.map((e) => ({ slug: e.slug, title: e.title, order: e.order }));
+}
+
+function orvCorpusToPayload(
+  corpus: SequelChapter,
+  map: Record<string, string[]>,
+): ChapterPayload {
+  const base = corpusChapterToPayload(corpus);
+  return {
+    ...base,
+    mood: orvChapterMoodFor(corpus.number),
+    intensity: orvChapterIntensityFor(corpus.number),
+    manhwaPanels: mergeManhwaPanels(corpus.slug, map),
+  };
+}
+
+/**
+ * Main-novel chapter payload, sourced from `content/Final Ebup.epub`
+ * (R2 in prod, `content/` in dev). Falls back to a map-only payload if
+ * the EPUB has no matching chapter but the manhwa map does — keeps
+ * the manhwa-only chapters (e.g. above the novel range) navigable.
+ */
+export async function loadOrvChapterPayloadBySlug(
+  slug: string,
+): Promise<ChapterPayload | null> {
+  const [corpus, map] = await Promise.all([
+    loadCorpusChapterBySlug("orv", slug),
+    loadManhwaMap(),
+  ]);
+  if (corpus) return orvCorpusToPayload(corpus, map);
+  // No EPUB chapter for this slug — fall back to manhwa-only rendering.
+  return buildMapOnlyChapterPayloadFromMap(slug, map);
+}
+
+function buildMapOnlyChapterPayloadFromMap(
+  slug: string,
+  map: Record<string, string[]>,
+): ChapterPayload | null {
+  const mappedPanels = map[slug];
+  if (!mappedPanels?.length) return null;
+  const order = chapterNumberFromSlug(slug) ?? 0;
+  return {
+    slug,
+    title: titleForMapOnlySlug(slug),
+    mood: syntheticMoodForOrder(order),
+    intensity: 55,
+    manhwaPanels: mappedPanels.map((imageUrl, index) => ({
+      id: `${slug}-panel-${index + 1}`,
+      imageUrl: publicAssetUrl(imageUrl),
+      alt: `${slug} panel ${index + 1}`,
+    })),
+    segments: mappedPanels.map((_, index) => ({
+      id: `${slug}-segment-${index + 1}`,
+      orderIndex: index,
+      kind: "narration",
+      text: PANEL_ONLY_TEXT,
+      keywords: [],
+      panel: null,
+    })),
+  };
+}
+
+// Keep the explicit-number variant exported so scripts / future callers
+// (e.g. search indexers) can iterate the EPUB without slug parsing.
+export async function loadOrvChapterPayload(
+  number: number,
+): Promise<ChapterPayload | null> {
+  const [corpus, map] = await Promise.all([
+    loadCorpusChapter("orv", number),
+    loadManhwaMap(),
+  ]);
+  if (!corpus) return null;
+  return orvCorpusToPayload(corpus, map);
 }

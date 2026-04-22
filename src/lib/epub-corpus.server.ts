@@ -34,13 +34,13 @@ import type {
  * runtime path. If you tweak one, tweak the other.
  */
 
-export type CorpusKind = "sequel" | "side";
+export type CorpusKind = "sequel" | "side" | "orv";
 
 type CorpusConfig = {
   kind: CorpusKind;
   /** R2 / local `content/...` path to the EPUB file. */
   contentRel: string;
-  /** `orv-seq-ch-N` / `orv-side-ch-N`. */
+  /** `orv-ch-N` / `orv-seq-ch-N` / `orv-side-ch-N`. */
   slugFor: (n: number) => string;
   /** Slug → chapter number, or null if invalid. */
   parseSlug: (slug: string) => number | null;
@@ -48,10 +48,23 @@ type CorpusConfig = {
    * Chapter numbering strategy:
    *   - "title": pull from the chapter <h2> / item.title (sequel).
    *   - "spine": spine position, 1-indexed (side).
+   *   - "orv-id": parse `chapter_N` spine id (ORV main novel).
    */
-  numbering: "title" | "spine";
+  numbering: "title" | "spine" | "orv-id";
   /** Human label used in `sourceUrl`. */
   epubLabel: string;
+  /**
+   * Optional filter on the raw spine id. Default keeps everything except
+   * intro/toc/cover/copyright. ORV main novel restricts to `chapter_*`.
+   */
+  flowFilter?: (id: string) => boolean;
+  /**
+   * ORV main novel: group `<p>[Title]</p>` + `<p>Author: …</p>` runs into
+   * a single window segment (no `<fieldset>` wrapper).
+   */
+  bareWindowGrouping?: boolean;
+  /** Drop `<h3>Chapter N: …</h3>` duplicates — the title lives on the item. */
+  stripH3?: boolean;
 };
 
 const SEQUEL_CONFIG: CorpusConfig = {
@@ -78,10 +91,44 @@ const SIDE_CONFIG: CorpusConfig = {
   epubLabel: "orv_side.epub",
 };
 
+const ORV_CONFIG: CorpusConfig = {
+  kind: "orv",
+  contentRel: "content/Final Ebup.epub",
+  slugFor: (n) => `orv-ch-${n}`,
+  parseSlug: (slug) => {
+    const m = /^orv-ch-(\d+)$/.exec(slug);
+    return m ? Number(m[1]) : null;
+  },
+  numbering: "orv-id",
+  epubLabel: "Final Ebup.epub",
+  flowFilter: (id) => /^chapter_\d+$/i.test(id),
+  bareWindowGrouping: true,
+  stripH3: true,
+};
+
 const CONFIGS: Record<CorpusKind, CorpusConfig> = {
   sequel: SEQUEL_CONFIG,
   side: SIDE_CONFIG,
+  orv: ORV_CONFIG,
 };
+
+function orvIdNumber(id: string): number | null {
+  const m = /^chapter_(\d+)$/i.exec(id);
+  if (!m) return null;
+  const n = parseInt(m[1]!, 10);
+  return Number.isFinite(n) && n >= 1 ? n : null;
+}
+
+/** ORV main novel heading: `"Chapter 12: Subtitle"` → `{ num, sub }`. */
+function parseOrvChapterHeading(
+  s: string,
+): { num: number; sub: string } | null {
+  const m = /^\s*(?:Chapter|Ch)\.?\s+(\d+)\s*[:\-\u2013\u2014]\s*(.*)$/i.exec(s);
+  if (!m) return null;
+  const num = parseInt(m[1]!, 10);
+  if (!Number.isFinite(num) || num < 1) return null;
+  return { num, sub: (m[2] ?? "").trim() };
+}
 
 // ---------- Parse helpers (mirror of scripts/ingest-*-epub.ts) ----------
 
@@ -128,18 +175,25 @@ function tidySegments(segs: SequelSegment[]): SequelSegment[] {
   return out;
 }
 
+const WINDOW_TITLE_RE = /^\[[^\]]+\]\.?$/;
+const WINDOW_META_RE =
+  /^(?:author\s*[:\-\u2013\u2014]\s*.+|\s*\d{1,3}(?:[,\s]\d{3})*(?:\s+)?chapters?\.?|status\s*[:\-\u2013\u2014]\s*.+|genre\s*[:\-\u2013\u2014]\s*.+|publisher\s*[:\-\u2013\u2014]\s*.+)$/i;
+
 function parseChapterHtml(
   html: string,
   number: number,
+  opts: { bareWindowGrouping?: boolean; stripH3?: boolean } = {},
 ): { title: string; segments: SequelSegment[]; authorNote: SequelSegment[] } {
   const $ = cheerio.load(html, { xmlMode: false });
 
   const h2 = $("h2").first();
+  const h3 = $("h3").first();
   let title =
-    (h2.text() || $("h1").first().text() || "").trim() || `Chapter ${number}`;
+    (h2.text() || $("h1").first().text() || h3.text() || "").trim() ||
+    `Chapter ${number}`;
   title = normalizeWhitespace(title);
 
-  $("script, style, header, nav").remove();
+  $("script, style, header, nav, figure, picture, source").remove();
   $('section[epub\\:type="endnotes"]').remove();
   $('aside[epub\\:type="footnote"]').remove();
   $('a:contains("CLICK TO READ CHAPTER COMMENTS")').closest("p").remove();
@@ -154,10 +208,27 @@ function parseChapterHtml(
   const segments: SequelSegment[] = [];
   let inAuthorNote = false;
   const authorNote: SequelSegment[] = [];
+  // ORV main novel: pending bare-window group. `[Title]` paragraph
+  // optimistically collects the Author/N-chapters meta lines that follow.
+  let pending: { title: string; meta: string[] } | null = null;
 
   const pushSeg = (seg: SequelSegment) => {
     if (inAuthorNote) authorNote.push(seg);
     else segments.push(seg);
+  };
+
+  const flushPending = () => {
+    if (!pending) return;
+    if (pending.meta.length === 0) {
+      pushSeg({ kind: classifyParagraph(pending.title), text: pending.title });
+    } else {
+      pushSeg({
+        kind: "window",
+        text: [pending.title, ...pending.meta].join("\n"),
+        title: pending.title,
+      });
+    }
+    pending = null;
   };
 
   const visit = (nodes: cheerio.Cheerio<AnyNode>) => {
@@ -165,19 +236,31 @@ function parseChapterHtml(
       if (el.type !== "tag") return;
       const tag = el.tagName?.toLowerCase?.() ?? "";
 
-      if (tag === "h2" || tag === "h1") return;
+      if (tag === "h1" || tag === "h2") {
+        flushPending();
+        return;
+      }
+      if (tag === "h3" || tag === "h4") {
+        if (opts.stripH3) {
+          flushPending();
+          return;
+        }
+      }
 
       if (tag === "hr") {
+        flushPending();
         pushSeg({ kind: "divider", text: "---" });
         return;
       }
 
       if (tag === "br") {
+        flushPending();
         pushSeg({ kind: "spacer", text: "" });
         return;
       }
 
       if (tag === "fieldset") {
+        flushPending();
         const inner = $(el);
         const lines: string[] = [];
         let fsTitle: string | null = null;
@@ -212,9 +295,25 @@ function parseChapterHtml(
           !inAuthorNote &&
           /^author['\u2019]?s?\s*note[:.\uFE55]?$/i.test(text)
         ) {
+          flushPending();
           inAuthorNote = true;
           return;
         }
+
+        if (opts.bareWindowGrouping) {
+          if (pending) {
+            if (WINDOW_META_RE.test(text)) {
+              pending.meta.push(text);
+              return;
+            }
+            flushPending();
+          }
+          if (WINDOW_TITLE_RE.test(text)) {
+            pending = { title: text, meta: [] };
+            return;
+          }
+        }
+
         pushSeg({ kind: classifyParagraph(text), text });
         return;
       }
@@ -232,6 +331,7 @@ function parseChapterHtml(
   };
 
   visit(root.children());
+  flushPending();
 
   return {
     title,
@@ -283,12 +383,21 @@ async function ensureEpubOnDisk(cfg: CorpusConfig): Promise<string> {
   const tmpPath = path.join(tmpDir, path.basename(cfg.contentRel));
 
   // In dev, the local copy at `content/*.epub` is fine — skip the copy.
-  const localDev = path.join(process.cwd(), cfg.contentRel);
-  try {
-    await fs.access(localDev);
-    return localDev;
-  } catch {
-    /* fall through to R2 fetch */
+  // Statically scope the path to `content/` so Next.js NFT tracing doesn't
+  // walk the whole project (matches the fix in src/lib/content-fetch.ts).
+  const sub = cfg.contentRel
+    .replace(/^\/+/, "")
+    .replace(/^content\//, "")
+    .split("/")
+    .filter(Boolean);
+  if (sub.length > 0) {
+    const localDev = path.join(process.cwd(), "content", ...sub);
+    try {
+      await fs.access(localDev);
+      return localDev;
+    } catch {
+      /* fall through to R2 fetch */
+    }
   }
 
   try {
@@ -312,9 +421,11 @@ async function loadHandle(cfg: CorpusConfig): Promise<CorpusHandle> {
   const filePath = await ensureEpubOnDisk(cfg);
   const epub = await EPub.createAsync(filePath);
   type FlowEntry = { id?: string; title?: string };
-  const rawFlow = (epub.flow as FlowEntry[]).filter(
-    (f) => !!f?.id && !isIntroOrToc(f.id),
-  );
+  const rawFlow = (epub.flow as FlowEntry[]).filter((f) => {
+    if (!f?.id) return false;
+    if (cfg.flowFilter) return cfg.flowFilter(f.id);
+    return !isIntroOrToc(f.id);
+  });
 
   const items: FlowItem[] = [];
   for (let i = 0; i < rawFlow.length; i++) {
@@ -323,6 +434,8 @@ async function loadHandle(cfg: CorpusConfig): Promise<CorpusHandle> {
     const metaTitle =
       (it.title && String(it.title).trim()) || `Part ${i + 1}`;
     let number: number | null;
+    let displayTitle = metaTitle;
+
     if (cfg.numbering === "title") {
       number = numberFromTitle(metaTitle);
       if (number === null) {
@@ -332,12 +445,23 @@ async function loadHandle(cfg: CorpusConfig): Promise<CorpusHandle> {
         number = null;
       }
       if (number === null) continue;
+    } else if (cfg.numbering === "orv-id") {
+      number = orvIdNumber(id);
+      if (number === null) continue;
+      // Prefer the `Chapter N: Subtitle` heading from the item metadata
+      // (falls back to a bare `Chapter N` if missing).
+      const parsed = parseOrvChapterHeading(metaTitle);
+      if (parsed) {
+        displayTitle = `Ch. ${parsed.num}: ${parsed.sub || metaTitle}`;
+      } else {
+        displayTitle = `Ch. ${number}`;
+      }
     } else {
       number = i + 1;
     }
     items.push({
       id,
-      title: metaTitle,
+      title: displayTitle,
       number,
       order: number,
       slug: cfg.slugFor(number),
@@ -408,12 +532,21 @@ export async function loadCorpusChapter(
     const html = await h.epub.getChapterAsync(item.id);
     if (!html || html.length < 20) return null;
 
-    const { title, segments, authorNote } = parseChapterHtml(html, number);
     const cfg = CONFIGS[kind];
+    const { title, segments, authorNote } = parseChapterHtml(html, number, {
+      bareWindowGrouping: cfg.bareWindowGrouping,
+      stripH3: cfg.stripH3,
+    });
+    // For ORV main novel the item.title already holds the cleaned
+    // `Ch. N: Subtitle`; prefer it so the reader header matches `/chapters`.
+    const displayTitle =
+      cfg.numbering === "orv-id"
+        ? item.title ?? `Ch. ${number}`
+        : title || item.title || `Chapter ${number}`;
     const chapter: SequelChapter = {
       number,
       slug: item.slug,
-      title: title || item.title || `Chapter ${number}`,
+      title: displayTitle,
       order: item.order,
       segments,
       authorNote,

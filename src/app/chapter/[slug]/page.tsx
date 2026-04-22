@@ -1,13 +1,12 @@
 import { notFound } from "next/navigation";
 import { ChapterReaderRoot } from "@/components/ChapterReader";
 import {
-  buildChapterPayload,
   buildExtraMapChapterIndexEntries,
-  buildMapOnlyChapterPayload,
+  loadOrvChapterIndexEntries,
+  loadOrvChapterPayloadBySlug,
 } from "@/lib/chapter-payload";
 import { corpusChapterToPayload } from "@/lib/corpus-chapter-payload";
 import type { ChapterIndexEntry } from "@/lib/types";
-import { prisma } from "@/lib/prisma";
 import {
   loadSequelChapterBySlug,
   loadSequelIndex,
@@ -65,31 +64,21 @@ export default async function ChapterPage({
     );
   }
 
-  const [chapter, indexRows, manhwaReadySlugs] = await Promise.all([
-    prisma.chapter.findUnique({
-      where: { slug },
-      include: {
-        segments: {
-          orderBy: { orderIndex: "asc" },
-          include: { panel: true },
-        },
-      },
-    }),
-    prisma.chapter.findMany({
-      orderBy: { order: "asc" },
-      select: { slug: true, title: true },
-    }),
-    getManhwaReadySlugs(prisma),
+  const [payload, epubIndex, manhwaReadySlugs] = await Promise.all([
+    loadOrvChapterPayloadBySlug(slug),
+    loadOrvChapterIndexEntries(),
+    getManhwaReadySlugs(),
   ]);
+  if (!payload) notFound();
 
-  const dbChapters: ChapterIndexEntry[] = indexRows.map((r) => ({
+  const epubChapters: ChapterIndexEntry[] = epubIndex.map((r) => ({
     slug: r.slug,
     title: r.title,
   }));
   const extraChapters = await buildExtraMapChapterIndexEntries(
-    new Set(dbChapters.map((r) => r.slug)),
+    new Set(epubChapters.map((r) => r.slug)),
   );
-  const allChapters: ChapterIndexEntry[] = [...extraChapters, ...dbChapters].sort(
+  const allChapters: ChapterIndexEntry[] = [...epubChapters, ...extraChapters].sort(
     (a, b) => {
       const aNum = Number.parseInt(a.slug.replace("orv-ch-", ""), 10);
       const bNum = Number.parseInt(b.slug.replace("orv-ch-", ""), 10);
@@ -102,11 +91,6 @@ export default async function ChapterPage({
   const prevSlug = i > 0 ? allChapters[i - 1]!.slug : null;
   const nextSlug =
     i >= 0 && i < allChapters.length - 1 ? allChapters[i + 1]!.slug : null;
-
-  const payload = chapter
-    ? await buildChapterPayload(chapter)
-    : await buildMapOnlyChapterPayload(slug);
-  if (!payload) notFound();
 
   return (
     <ChapterReaderRoot
