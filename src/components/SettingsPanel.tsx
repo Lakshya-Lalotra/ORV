@@ -15,7 +15,7 @@ const modes: {
   {
     id: "novel",
     label: "Novel",
-    desc: "Full text, typography, keywords — like the prose reader on orv.pages.dev.",
+    desc: "Full text, typography, keywords — the classic prose reader.",
     icon: "📘",
   },
   {

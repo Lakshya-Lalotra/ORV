@@ -1,20 +1,18 @@
 /**
- * Text-only ingest of the ORV main story from `content/Final Ebup.epub`
- * (the singsyong / Bittu community compile of the novel, 551 chapters).
+ * Text-only ingest of the ORV main story from `content/Final Ebup.epub`.
  *
  *   npm run ingest:novel-epub
  *   npm run ingest:novel-epub -- --force        # re-write every chapter
  *   npm run ingest:novel-epub -- --limit=5      # first 5 spine chapters
  *   npm run ingest:novel-epub -- --from=1 --to=10
  *
- * Unlike `ingest:epub` (generic) and `ingest:bittu` (GitHub TXT), this
- * script:
+ * Unlike `ingest:epub` (generic), this script:
  *
  *   1. Reads the spine HTML with cheerio so we can preserve structural
  *      blocks (notably `<fieldset>` status windows like
  *      `[Three Ways to Survive in a Ruined World]`) as a single
  *      window-sentinel segment — then the reader renders them via
- *      `StoryWindowCard`, matching orv.pages.dev's `orv_window` panel.
+ *      `StoryWindowCard`.
  *   2. Drops every `<img>` in the source so novel mode ships clean
  *      prose only — no webtoon-style panel attached to the text.
  *   3. Never writes `ManhwaPanel` rows. Manhwa mode still works

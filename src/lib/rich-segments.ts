@@ -1,7 +1,7 @@
 /**
  * Rich-segment encoding.
  *
- * orv.pages.dev's chapter HTML groups several kinds of in-story blocks:
+ * The source chapter HTML groups several kinds of in-story blocks:
  *
  *   `<div class="orv_window">`   — bordered info card
  *                                  (e.g. `[Three Ways to Survive in a Ruined World]` + `Author: tls123` + `3,149 chapters.`)

@@ -3,8 +3,8 @@
 import type { ReactNode } from "react";
 
 /**
- * Rounded "info window" card — our equivalent of orv.pages.dev's
- * `<div class="orv_window">` block.
+ * Rounded "info window" card — our rendering of the in-story `orv_window`
+ * block found in the source HTML.
  *
  *   ┌──────────────────────────────────────────────┐
  *   │ [Three Ways to Survive in a Ruined World]    │ ← title

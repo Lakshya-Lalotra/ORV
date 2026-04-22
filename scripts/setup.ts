@@ -5,7 +5,6 @@
  * Optional .env:
  *   ORV_TXT_URL=https://...     → download then ingest
  *   ORV_FETCH_ARCHIVE=1         → same as npm run ingest:txt:ia (Archive full DJVU txt)
- *   ORV_INGEST_BITTU=1          → fetch chapters from github.com/Bittu5134/ORV-Reader
  *   ORV_SIDE_EPUB=...           → alternate path for one-shots EPUB (default: content/orv_side.epub)
  */
 
@@ -35,20 +34,11 @@ try {
 const pdf = resolvePdfPath(root);
 const epubLocal = resolveEpubPath(root);
 const txtLocal = resolveTxtPath(root);
-const wantBittu = process.env.ORV_INGEST_BITTU === "1";
 const wantRemote =
   Boolean(process.env.ORV_TXT_URL?.trim()) ||
   process.env.ORV_FETCH_ARCHIVE === "1";
 
-if (wantBittu) {
-  console.log("\n  Ingest from Bittu5134/ORV-Reader (GitHub)…\n");
-  try {
-    run("npx tsx scripts/ingest-bittu-github.ts");
-  } catch {
-    console.error("\n  Bittu ingest failed — seeding demos.\n");
-    run("npx prisma db seed");
-  }
-} else if (wantRemote) {
+if (wantRemote) {
   console.log(
     `\n  Full-text ingest (ORV_TXT_URL or ORV_FETCH_ARCHIVE=1 → Internet Archive if no URL)…\n`,
   );

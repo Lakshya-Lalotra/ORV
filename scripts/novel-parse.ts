@@ -1,9 +1,9 @@
-/** Shared plain-text → chapter list (`Chapter N:` or Bittu-style `Ch N:` headings). */
+/** Shared plain-text → chapter list (`Chapter N:` or short-form `Ch N:` headings). */
 
 const CH_HEAD = "(?:Chapter|Ch)";
 
 /**
- * Single-line heading like Bittu / orv.pages.dev: `Ch 12: Subtitle` or `Chapter 12: Subtitle`.
+ * Single-line heading like `Ch 12: Subtitle` or `Chapter 12: Subtitle`.
  */
 export function parseNovelChapterHeading(line: string): { num: number; title: string } | null {
   const t = line.trim();

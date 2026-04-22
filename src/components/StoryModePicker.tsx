@@ -6,13 +6,13 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import {
-  BITTU_COVER_ORV_WEBP,
-  BITTU_COVER_ONESHOT_WEBP,
-  BITTU_COVER_SEQUEL_WEBP,
-  BITTU_STARFIELD_JPG,
+  ORV_COVER_WEBP,
+  ONESHOT_COVER_WEBP,
+  SEQUEL_COVER_WEBP,
+  STARFIELD_JPG,
   ORV_OFFICIAL_MARK_PNG,
   ORV_WEBTOON_KEY_VISUAL_JPG,
-} from "@/lib/bittu-orv-assets";
+} from "@/lib/orv-library-assets";
 import { OrvLibraryWordmark } from "@/components/OrvLibraryWordmark";
 import { useReader } from "@/context/ReaderContext";
 import { readingStatusPillClass, type StoryStatus } from "@/lib/story-meta";
@@ -151,7 +151,7 @@ export function StoryModePicker() {
   const cards: CardDef[] = [
     {
       title: "Novel",
-      src: BITTU_COVER_ORV_WEBP,
+      src: ORV_COVER_WEBP,
       alt: "Novel",
       kind: "internal",
       status: "Completed",
@@ -167,7 +167,7 @@ export function StoryModePicker() {
     },
     {
       title: "ORV Sequel",
-      src: BITTU_COVER_SEQUEL_WEBP,
+      src: SEQUEL_COVER_WEBP,
       alt: "ORV Sequel",
       kind: "internal",
       status: "Ongoing",
@@ -178,7 +178,7 @@ export function StoryModePicker() {
     },
     {
       title: "One-shots",
-      src: BITTU_COVER_ONESHOT_WEBP,
+      src: ONESHOT_COVER_WEBP,
       alt: "ORV one-shot side stories",
       kind: "internal",
       status: "Completed",
@@ -211,7 +211,7 @@ export function StoryModePicker() {
     >
       <div ref={starRef} className="pointer-events-none absolute inset-[-4%] z-0">
         <Image
-          src={BITTU_STARFIELD_JPG}
+          src={STARFIELD_JPG}
           alt=""
           fill
           className="object-cover opacity-20"

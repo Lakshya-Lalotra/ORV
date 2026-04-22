@@ -5,10 +5,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
 import {
-  BITTU_COVER_ORV_WEBP,
+  ORV_COVER_WEBP,
   ORV_READER_WORDMARK_PNG,
   ORV_WEBTOON_KEY_VISUAL_JPG,
-} from "@/lib/bittu-orv-assets";
+} from "@/lib/orv-library-assets";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useReader } from "@/context/ReaderContext";
 
@@ -22,7 +22,7 @@ export function HomeIntro() {
   const modeLabel = settings.viewMode === "manhwa" ? "Manhwa" : "Novel";
   const chaptersHref = `/chapters?mode=${settings.viewMode}`;
   const heroCoverSrc =
-    settings.viewMode === "manhwa" ? ORV_WEBTOON_KEY_VISUAL_JPG : BITTU_COVER_ORV_WEBP;
+    settings.viewMode === "manhwa" ? ORV_WEBTOON_KEY_VISUAL_JPG : ORV_COVER_WEBP;
   const heroCoverAlt =
     settings.viewMode === "manhwa"
       ? "Omniscient Reader's Viewpoint webtoon key visual"

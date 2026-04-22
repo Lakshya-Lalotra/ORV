@@ -4,7 +4,7 @@ import { StoryModePicker } from "@/components/StoryModePicker";
 export const metadata: Metadata = {
   title: "Stories — ORV Reader",
   description:
-    "Pick novel or manhwa before opening the reader (orv.pages.dev–style flow).",
+    "Pick novel or manhwa before opening the reader.",
 };
 
 export default function Home() {

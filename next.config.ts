@@ -132,18 +132,8 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "raw.githubusercontent.com",
-        pathname: "/Bittu5134/ORV-Reader/**",
-      },
-      {
-        protocol: "https",
         hostname: "www.mangaread.org",
         pathname: "/wp-content/uploads/**",
-      },
-      {
-        protocol: "https",
-        hostname: "orv.pages.dev",
-        pathname: "/**",
       },
       ...remotePatternForBlobBase(),
     ],

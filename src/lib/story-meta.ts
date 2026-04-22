@@ -1,10 +1,6 @@
 /**
  * Per-series metadata for the story landing page.
  *
- * Mirrors the cards on https://orv.pages.dev/stories/ (title, author,
- * chapter count, status, description, cover) but styled in this app's
- * own design language.
- *
  *   "main:novel"  → ORV novel   (`viewMode = "novel"`)
  *   "main:manhwa" → ORV manhwa  (`viewMode = "manhwa"`)
  *   "sequel"      → ORV Sequel (EPUB ingest)
@@ -13,11 +9,11 @@
 
 import type { ViewMode } from "@/lib/types";
 import {
-  BITTU_COVER_ONESHOT_WEBP,
-  BITTU_COVER_ORV_WEBP,
-  BITTU_COVER_SEQUEL_WEBP,
+  ONESHOT_COVER_WEBP,
+  ORV_COVER_WEBP,
+  SEQUEL_COVER_WEBP,
   ORV_WEBTOON_KEY_VISUAL_JPG,
-} from "@/lib/bittu-orv-assets";
+} from "@/lib/orv-library-assets";
 
 export type StoryStatus = "Completed" | "Ongoing" | "Hiatus";
 
@@ -53,7 +49,7 @@ const NOVEL: StoryMeta = {
   status: "Completed",
   description:
     "Dokja, an average office worker, finds his favorite web novel Three Ways to Survive the Apocalypse becoming reality. With unique knowledge of the impending doom, he strives to alter the story's fate and reshape his world.",
-  cover: BITTU_COVER_ORV_WEBP,
+  cover: ORV_COVER_WEBP,
   coverAlt: "Omniscient Reader's Viewpoint cover illustration",
   verb: "Read",
   unitLabel: "segments",
@@ -85,7 +81,7 @@ const SIDE: StoryMeta = {
   status: "Completed",
   description:
     "Short stories and side content from the ORV universe, read from the bundled EPUB in this reader.",
-  cover: BITTU_COVER_ONESHOT_WEBP,
+  cover: ONESHOT_COVER_WEBP,
   coverAlt: "ORV one-shot side stories",
   verb: "Read",
   unitLabel: "segments",
@@ -101,7 +97,7 @@ const SEQUEL: StoryMeta = {
   status: "Ongoing",
   description:
     "The story follows Lee Hakhyun, the author of ORV from another worldline. He transmigrates into Ways of Survival with other ORV readers. However, the scenarios have been messed up due to the participation of ORV readers and KimCom.",
-  cover: BITTU_COVER_SEQUEL_WEBP,
+  cover: SEQUEL_COVER_WEBP,
   coverAlt: "Omniscient Reader's Viewpoint Sequel cover illustration",
   verb: "Read",
   unitLabel: "segments",

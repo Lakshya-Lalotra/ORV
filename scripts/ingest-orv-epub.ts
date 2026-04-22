@@ -1,12 +1,11 @@
 /**
- * Ingest from EPUB → reader chapters aligned with novel numbering (same idea as
- * [Bittu5134/ORV-Reader](https://github.com/Bittu5134/ORV-Reader) / orv.pages.dev `ch_1`, `ch_2`, …).
+ * Ingest from EPUB → reader chapters aligned with novel numbering.
  *
  *   npm run ingest:epub
  *
  * **Spine** mode: each spine HTML file is scanned for a **`Ch N:`** or **`Chapter N:`** heading
  * (title or first text line). Slug **`orv-ch-N`** uses that **N**, not spine order — so
- * **orv-ch-1** matches Prologue like https://orv.pages.dev/stories/orv/read/ch_1
+ * **orv-ch-1** maps to chapter 1 (usually the Prologue).
  *
  * Put **`Final Ebup.epub`** (or `Final Epub.epub`) in content/, or `File.epub`, or set ORV_EPUB_PATH.
  *
@@ -16,9 +15,6 @@
  *
  * ORV_SKIP_FIRST_CHAPTERS — drop the first N **spine files** (spine mode) or first N **parsed**
  * chapters (merge) before import. Default **0**.
- *
- * ORV_ATTACH_BITTU_ILLUSTRATIONS=0 — skip fetching Bittu chap_*.txt to attach repo image URLs
- * to segments (default: on). Uses ORV_BITTU_DELAY_MS between requests.
  */
 
 import "dotenv/config";
@@ -31,10 +27,6 @@ import {
   parseAllChapters,
   parseNovelChapterHeading,
 } from "./novel-parse";
-import {
-  enrichParsedChaptersWithBittuPanelFilenames,
-  shouldAttachBittuPanelsForIngest,
-} from "./attach-bittu-panels-for-ingest";
 import { resolveEpubPath } from "./epub-path";
 import type { ParsedChapter } from "./write-novel-db";
 import { writeNovelChaptersToDb } from "./write-novel-db";
@@ -102,7 +94,7 @@ function looksLikePrologueTitle(title: string, body: string): boolean {
   return /\bprologue\b/.test(blob);
 }
 
-/** Spine files → chapters keyed by novel number (Bittu / orv.pages.dev style). */
+/** Spine files → chapters keyed by novel number. */
 function spineChunksToNumberedChapters(items: { title: string; body: string }[]): Parsed[] {
   const numbered: Parsed[] = [];
   for (const { title, body } of items) {
@@ -193,12 +185,12 @@ async function ingestSpineChapters(epubPath: string, skipSpineFiles: number): Pr
   const out = spineChunksToNumberedChapters(sliceFrom);
   if (out.length === 0) {
     throw new Error(
-      'No "Ch N:" / "Chapter N:" headings in spine — try ORV_EPUB_MODE=merge or npm run ingest:bittu.',
+      'No "Ch N:" / "Chapter N:" headings in spine — try ORV_EPUB_MODE=merge.',
     );
   }
 
   console.log(
-    `Spine → ${out.length} novel chapter(s) by heading (slug orv-ch-N = chapter N, like ORV-Reader ch_N).`,
+    `Spine → ${out.length} novel chapter(s) by heading (slug orv-ch-N = chapter N).`,
   );
   return out;
 }
@@ -282,13 +274,6 @@ async function main() {
   console.log(`Importing ${chapters.length} chapter page(s).`);
 
   const asParsed = chapters as ParsedChapter[];
-  if (shouldAttachBittuPanelsForIngest()) {
-    console.log(
-      "Fetching Bittu repo illustration lists per chapter (ORV_ATTACH_BITTU_ILLUSTRATIONS=0 to skip)…",
-    );
-    await enrichParsedChaptersWithBittuPanelFilenames(asParsed);
-  }
-
   await writeNovelChaptersToDb(prisma, PROJECT_ROOT, asParsed);
   console.log("Done. Open /chapters → each item opens a full chapter page.");
 }

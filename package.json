@@ -15,7 +15,6 @@
     "ingest:txt:ia": "tsx scripts/ingest-orv-txt.ts --from-archive",
     "ingest:epub": "tsx scripts/ingest-orv-epub.ts",
     "ingest:novel-epub": "tsx scripts/ingest-novel-epub.ts",
-    "ingest:bittu": "tsx scripts/ingest-bittu-github.ts",
     "build:manhwa-map": "tsx scripts/build-manhwa-map-from-folders.ts",
     "scrape:manhwa": "tsx scripts/scrape-manhwa-chapter.ts",
     "scrape:manhwa:new": "tsx scripts/scrape-manhwa-incremental.ts",
@@ -25,6 +24,7 @@
     "branding:webtoon-cover": "tsx scripts/fetch-webtoon-cover.ts",
     "upload:r2-prologue": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/upload-prologue-r2.ps1",
     "upload:r2-panels": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/upload-panels-r2.ps1",
+    "upload:r2-branding": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/upload-branding-r2.ps1",
     "upload:r2-epub": "node ./scripts/upload-epub-r2.mjs",
     "postinstall": "prisma generate"
   },

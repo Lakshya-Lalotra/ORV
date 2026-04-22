@@ -1,7 +1,6 @@
 /**
  * Ingest the ORV Sequel side-story from the local EPUB at
- * `content/orv_sequel.epub` (singNshong's community compile of the
- * orv.pages.dev fan translation, Ch 553–1000) and persist it as the
+ * `content/orv_sequel.epub` (Ch 553–1000) and persist it as the
  * same structured JSON our `corpusChapterToPayload` / `ChapterReader` consume —
  * i.e. `content/sequel/index.json` + `content/sequel/ch_NNN.json`.
  *

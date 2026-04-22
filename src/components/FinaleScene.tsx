@@ -7,7 +7,7 @@ import { FINALE_HERO_ART } from "@/lib/reveal-shared";
 import {
   ORV_OFFICIAL_MARK_PNG,
   ORV_READER_WORDMARK_TRANSPARENT_PNG,
-} from "@/lib/bittu-orv-assets";
+} from "@/lib/orv-library-assets";
 
 /**
  * Finale scene.

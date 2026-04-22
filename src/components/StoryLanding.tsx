@@ -26,7 +26,7 @@ import { OrvLibraryWordmark } from "@/components/OrvLibraryWordmark";
 /**
  * Story landing page — one per reading mode (novel / manhwa).
  *
- * Mirrors the shape of https://orv.pages.dev/stories/orv/:
+ * Mirrors a typical story-index layout:
  *   ┌─ cover ─┬──────────────────────────────┐
  *   │         │ eyebrow · title              │
  *   │         │ author / chapters / status   │

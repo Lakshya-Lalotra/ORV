@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { forwardRef } from "react";
-import { ORV_READER_WORDMARK_PNG } from "@/lib/bittu-orv-assets";
+import { ORV_READER_WORDMARK_PNG } from "@/lib/orv-library-assets";
 
 type Props = {
   /**

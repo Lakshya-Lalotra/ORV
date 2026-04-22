@@ -23,10 +23,6 @@ import {
   expandChapterLineBreaks,
   parseAllChapters,
 } from "./novel-parse";
-import {
-  enrichParsedChaptersWithBittuPanelFilenames,
-  shouldAttachBittuPanelsForIngest,
-} from "./attach-bittu-panels-for-ingest";
 import { resolveTxtPath } from "./txt-path";
 import type { ParsedChapter } from "./write-novel-db";
 import { writeNovelChaptersToDb } from "./write-novel-db";
@@ -115,13 +111,6 @@ async function main() {
   console.log(`Parsed ${chapters.length} chapter(s) from body.`);
 
   const asParsed = chapters as ParsedChapter[];
-  if (shouldAttachBittuPanelsForIngest()) {
-    console.log(
-      "Fetching Bittu repo illustration lists per chapter (ORV_ATTACH_BITTU_ILLUSTRATIONS=0 to skip)…",
-    );
-    await enrichParsedChaptersWithBittuPanelFilenames(asParsed);
-  }
-
   await writeNovelChaptersToDb(prisma, PROJECT_ROOT, asParsed);
   console.log("Done. Open /chapters to browse.");
 }
