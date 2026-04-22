@@ -26,7 +26,11 @@ $public = Join-Path $root "public"
 $items = @(
   @{ Key = "Video/gilded-lily-animation.mp4"; Rel = "Video\gilded-lily-animation.mp4"; Ct = "video/mp4" },
   @{ Key = "audio/gilded-lily.mp3"; Rel = "audio\gilded-lily.mp3"; Ct = "audio/mpeg" },
-  @{ Key = "art/finale-hero.jpg"; Rel = "art\finale-hero.jpg"; Ct = "image/jpeg" }
+  @{ Key = "art/finale-hero.jpg"; Rel = "art\finale-hero.jpg"; Ct = "image/jpeg" },
+  @{ Key = "branding/orv-reader-wordmark.png"; Rel = "branding\orv-reader-wordmark.png"; Ct = "image/png" },
+  @{ Key = "branding/orv-reader-wordmark-transparent.png"; Rel = "branding\orv-reader-wordmark-transparent.png"; Ct = "image/png" },
+  @{ Key = "branding/orv-webtoon-key-visual.jpg"; Rel = "branding\orv-webtoon-key-visual.jpg"; Ct = "image/jpeg" },
+  @{ Key = "branding/orv-wiki-logo.png"; Rel = "branding\orv-wiki-logo.png"; Ct = "image/png" }
 )
 
 Write-Host "Repo root: $root"

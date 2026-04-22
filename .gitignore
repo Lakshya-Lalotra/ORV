@@ -62,6 +62,16 @@ next-env.d.ts
 /content/side/
 # Local panel masters (often large); use npm run build:manhwa-map -- --sync → public/panels
 /content/panels
+
+# --- Media served from R2 at runtime (via NEXT_PUBLIC_ORV_BLOB_BASE) ---
+# These used to live in the Next.js public/ tree. They are now lazy-loaded
+# from R2 through publicAssetUrl, so keeping them in the repo only bloats the
+# build. Upload the same keys to R2 (Video/..., audio/..., art/..., branding/...,
+# panels/...). Kept out of git; local copies still work for offline dev.
+/public/Video
+/public/audio
+/public/art
+/public/branding
 # Published panel JPEGs (can be GB+); deploy via CI/scrape or sync separately — do not commit
 /public/panels
 
