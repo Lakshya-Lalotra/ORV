@@ -52,7 +52,9 @@ next-env.d.ts
 /content/*.txt
 !/content/prologue.example.txt
 /content/*.epub
-/content/manhwa-map.json
+# manhwa-map.json maps slugs → panel URLs and must be present on the server
+# so the chapter list is not empty. Small JSON, safe to commit.
+# /content/manhwa-map.json
 # Local panel masters (often large); use npm run build:manhwa-map -- --sync → public/panels
 /content/panels
 # Published panel JPEGs (can be GB+); deploy via CI/scrape or sync separately — do not commit
