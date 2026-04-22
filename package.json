@@ -25,6 +25,7 @@
     "branding:webtoon-cover": "tsx scripts/fetch-webtoon-cover.ts",
     "upload:r2-prologue": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/upload-prologue-r2.ps1",
     "upload:r2-panels": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/upload-panels-r2.ps1",
+    "upload:r2-epub": "node ./scripts/upload-epub-r2.mjs",
     "postinstall": "prisma generate"
   },
   "prisma": {
