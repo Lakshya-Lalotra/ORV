@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { Suspense } from "react";
 import { AuthGate } from "@/components/AuthGate";
 import { loadProloguePayload } from "@/lib/prologue-load.server";
 import { getRevealMediaUrls } from "@/lib/reveal-media";
+import { PROLOGUE_COOKIE } from "@/lib/orv-auth-policy";
 
 export const metadata: Metadata = {
   title: "Enter — ORV Reader",
@@ -11,13 +13,31 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default function AuthPage() {
+type AuthPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+/**
+ * /auth?replay=1 — testing: clear `orv-prologue-complete` and remount the
+ * gate from the “tap to start” step (full prologue again) without freezing
+ * / after you leave with “Continue” on a normal visit.
+ */
+export default async function AuthPage({ searchParams }: AuthPageProps) {
+  const sp = await searchParams;
+  const raw = sp.replay;
+  const replay = raw === "1" || (Array.isArray(raw) && raw[0] === "1");
+  if (replay) {
+    (await cookies()).delete(PROLOGUE_COOKIE);
+  }
+
   const prologue = loadProloguePayload();
   const media = getRevealMediaUrls();
+  // Fresh mount when replay=1 (see comment above).
+  const remountKey = replay ? `replay-${Date.now()}` : "default";
 
   return (
     <Suspense fallback={null}>
-      <AuthGate prologue={prologue} media={media} />
+      <AuthGate key={remountKey} prologue={prologue} media={media} />
     </Suspense>
   );
 }
