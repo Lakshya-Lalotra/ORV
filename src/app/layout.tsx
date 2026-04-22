@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Share_Tech_Mono } from "next/font/google";
 import { ReaderProvider } from "@/context/ReaderContext";
 import { SystemOverlayProvider } from "@/components/SystemOverlay";
@@ -22,6 +22,19 @@ export const metadata: Metadata = {
   title: "ORV Reader — Omniscient Reader's Viewpoint",
   description:
     "Choose web novel or manhwa, then read with audio and a Prisma-backed chapter API.",
+};
+
+/**
+ * `viewport-fit=cover` is required so `env(safe-area-inset-*)` resolves
+ * on notched / gesture-bar phones (Pixel 10, iPhone 14+, etc.). Without
+ * it the prologue video leaves a system-color strip below the media and
+ * the story library can't size to `100dvh` correctly.
+ */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#000000",
 };
 
 export default function RootLayout({

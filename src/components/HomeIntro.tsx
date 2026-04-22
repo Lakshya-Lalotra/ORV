@@ -29,7 +29,7 @@ export function HomeIntro() {
       : "Omniscient Reader's Viewpoint cover illustration";
 
   return (
-    <div className="orv-shell relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 text-[var(--foreground)]">
+    <div className="orv-shell relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden px-6 text-[var(--foreground)]">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(214,170,92,0.14),transparent_22%),radial-gradient(circle_at_80%_15%,rgba(255,255,255,0.05),transparent_20%)]" />
       <div
         aria-hidden

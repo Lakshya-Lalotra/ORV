@@ -78,11 +78,24 @@
 body {
   min-height: 100vh;
   min-height: 100svh;
+  min-height: 100dvh;
   font-family: var(--font-sans);
   color: var(--foreground);
   background: radial-gradient(circle at top, rgba(214, 170, 92, 0.12), transparent 20%),
     radial-gradient(circle at 80% 10%, rgba(255, 255, 255, 0.06), transparent 18%),
     linear-gradient(180deg, #080808 0%, #050506 45%, #030304 100%);
+  /* Keep mobile pull-to-refresh / rubber-band from painting outside the
+   * dark background and flashing the browser chrome color through. */
+  overscroll-behavior-y: none;
+}
+
+/* While the auth gate is mounted, lock the page to black across light +
+ * dark themes and even inside the safe-area insets so the prologue
+ * video never reveals a white strip under the Android URL/gesture bars. */
+html:has(.orv-auth-gate),
+body:has(.orv-auth-gate) {
+  background: #000 !important;
+  overflow: hidden;
 }
 
 :root[data-theme="light"] body {
@@ -930,6 +943,7 @@ body {
 .orv-shell {
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .orv-shell::before {

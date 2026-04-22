@@ -203,7 +203,11 @@ export function StoryModePicker() {
   return (
     <div
       ref={rootRef}
-      className="orv-shell relative flex h-[100dvh] max-h-[100dvh] w-full flex-col overflow-hidden bg-[var(--background)] text-[var(--foreground)]"
+      // Phones (portrait + landscape) and short windows can't fit the
+      // 5-card rail + header in a locked 100dvh, so we always allow
+      // scroll. When the viewport is tall enough the content naturally
+      // fills one screen and there is nothing to scroll.
+      className="orv-shell relative flex min-h-[100dvh] w-full flex-col bg-[var(--background)] text-[var(--foreground)]"
     >
       <div ref={starRef} className="pointer-events-none absolute inset-[-4%] z-0">
         <Image
@@ -219,7 +223,7 @@ export function StoryModePicker() {
       </div>
       <OrvLibraryWordmark ref={wordmarkRef} layout="viewport" />
 
-      <main className="relative z-10 flex h-full flex-col px-3 pb-[max(env(safe-area-inset-bottom),0.6rem)] pt-[max(env(safe-area-inset-top),0.6rem)] sm:px-5 md:px-8">
+      <main className="relative z-10 flex flex-1 flex-col px-3 pb-[max(env(safe-area-inset-bottom),0.6rem)] pt-[max(env(safe-area-inset-top),0.6rem)] sm:px-5 md:px-8">
         <header
           data-gs="header"
           className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 pb-2 md:pb-3"
@@ -282,7 +286,7 @@ export function StoryModePicker() {
           >
             Reading materials
           </p>
-          <div className="grid min-h-0 flex-1 grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {cards.map((card) => (
               <CoverCard key={card.title} card={card} />
             ))}

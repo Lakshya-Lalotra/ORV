@@ -379,7 +379,7 @@ export function StoryLanding({ chapters, series, manhwaReadySlugs }: Props) {
   return (
     <div
       ref={rootRef}
-      className="orv-shell min-h-screen bg-[var(--background)] text-[var(--foreground)]"
+      className="orv-shell min-h-[100dvh] bg-[var(--background)] text-[var(--foreground)]"
     >
       <OrvLibraryWordmark layout="scroll" />
 

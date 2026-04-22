@@ -437,7 +437,7 @@ export function ChapterReader({ chapter, nav }: ChapterReaderProps) {
   return (
     <div
       ref={rootRef}
-      className={`relative min-h-screen overflow-x-hidden bg-[var(--reader-bg)] text-[var(--reader-fg)] ${
+      className={`relative min-h-[100dvh] overflow-x-hidden bg-[var(--reader-bg)] text-[var(--reader-fg)] ${
         manhwaMode ? "touch-manipulation" : ""
       }`}
       style={{

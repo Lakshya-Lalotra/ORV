@@ -534,7 +534,7 @@ export function AuthGate({ prologue = null, media: mediaProp = null }: AuthGateP
   return (
     <div
       onClick={revealClickable ? fadeOutAndGo : undefined}
-      className={`orv-auth-gate relative flex min-h-screen items-center justify-center overflow-hidden bg-black px-6 text-neutral-200 ${
+      className={`orv-auth-gate relative flex min-h-[100dvh] items-center justify-center overflow-hidden bg-black px-6 text-neutral-200 ${
         revealClickable ? "cursor-pointer" : ""
       }`}
     >
@@ -544,9 +544,12 @@ export function AuthGate({ prologue = null, media: mediaProp = null }: AuthGateP
         muted
         playsInline
         preload="auto"
+        // `h-[100dvh] w-screen` pins the reveal-phase video to the
+        // *visible* mobile viewport so Android Chrome's URL/gesture bars
+        // don't leave a body-colored strip behind the video.
         className={
           phase === "reveal"
-            ? "pointer-events-none fixed inset-0 z-0 h-full w-full object-cover transition-opacity duration-[1400ms] ease-out"
+            ? "pointer-events-none fixed inset-0 z-0 h-[100dvh] w-screen object-cover transition-opacity duration-[1400ms] ease-out"
             : "pointer-events-none fixed -left-[200vw] top-0 h-0 w-0 opacity-0"
         }
         style={
