@@ -209,7 +209,10 @@ export type OrvChapterIndexEntry = ChapterIndexEntry & { order: number };
  * would require parsing every chapter; the UI tolerates this.
  */
 export async function loadOrvChapterIndexRows(): Promise<OrvChapterIndexRow[]> {
-  const index = await loadCorpusIndex("orv");
+  const [index, map] = await Promise.all([
+    loadCorpusIndex("orv"),
+    loadManhwaMap(),
+  ]);
   return index.map((e) => ({
     id: `orv-${e.slug}`,
     slug: e.slug,
@@ -217,7 +220,12 @@ export async function loadOrvChapterIndexRows(): Promise<OrvChapterIndexRow[]> {
     mood: orvChapterMoodFor(e.number),
     intensity: orvChapterIntensityFor(e.number),
     order: e.order,
-    segmentCount: 0,
+    // Doubles as the manhwa panel count (rendered as "N panels" in manhwa
+    // mode, "N segments" in novel mode). Parsing every EPUB chapter up
+    // front just to get a segment count is too expensive, so we use panel
+    // count when available and 0 otherwise. Accurate count shows up once
+    // the chapter actually loads in the reader.
+    segmentCount: map[e.slug]?.length ?? 0,
   }));
 }
 

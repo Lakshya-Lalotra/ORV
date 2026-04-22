@@ -32,7 +32,13 @@ function blobUrl(relPath: string): string | null {
   const base = blobBase();
   if (!base) return null;
   const clean = relPath.replace(/^\/+/, "");
-  return `${base}/${clean}`;
+  // URL-encode each path segment (preserve slashes) so keys containing
+  // spaces or Unicode (e.g. `content/Final Ebup.epub`) are fetchable.
+  const encoded = clean
+    .split("/")
+    .map((part) => encodeURIComponent(part))
+    .join("/");
+  return `${base}/${encoded}`;
 }
 
 // Statically scope to `content/` so Next's NFT doesn't trace the whole
@@ -60,14 +66,48 @@ async function fetchRemote<T>(
   relPath: string,
   parse: (raw: string) => T,
 ): Promise<T | null> {
+  // First attempt: cached (Next ISR — warm reads are instant).
   try {
     const res = await fetch(url, {
       next: { revalidate: 3600, tags: [`content:${relPath}`] },
     });
-    if (!res.ok) return null;
+    if (res.ok) {
+      const raw = await res.text();
+      try {
+        return parse(raw);
+      } catch (err) {
+        console.warn(`[content-fetch] parse failed for ${relPath}:`, err);
+        return null;
+      }
+    }
+    // Non-2xx: don't let Next cache the failure for 1h. Retry once with
+    // cache disabled so the next user request can try R2 fresh.
+    if (res.status !== 404) {
+      console.warn(
+        `[content-fetch] ${relPath}: R2 GET ${url} → ${res.status} (retrying no-store)`,
+      );
+    }
+  } catch (err) {
+    console.warn(`[content-fetch] ${relPath}: cached fetch threw`, err);
+  }
+
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) {
+      console.warn(
+        `[content-fetch] ${relPath}: R2 GET ${url} → ${res.status} (no-store)`,
+      );
+      return null;
+    }
     const raw = await res.text();
-    return parse(raw);
-  } catch {
+    try {
+      return parse(raw);
+    } catch (err) {
+      console.warn(`[content-fetch] parse failed for ${relPath}:`, err);
+      return null;
+    }
+  } catch (err) {
+    console.warn(`[content-fetch] ${relPath}: no-store fetch threw`, err);
     return null;
   }
 }
