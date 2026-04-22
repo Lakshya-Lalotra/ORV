@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { loadAllowedNamesFromEnv, normalizeReaderName } from "@/lib/allowed-readers";
+import { PROLOGUE_COOKIE } from "@/lib/orv-auth-policy";
 
 const AUTH_COOKIE = "orv-reader-key";
 
@@ -15,17 +16,20 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // QA / staging: do not use the allowlisted cookie to skip the gate—every
-  // server navigation goes through `/auth` and the prologue. Client-side
-  // routing can still open other routes without a new request.
+  // QA: ORV_ALWAYS_PROLOGUE=1 still sends allowlisted users to /auth on every
+  // *full* navigation until they finish the finale. Once AuthGate sets
+  // orv-prologue-complete=1, the same user may access the app (otherwise
+  // "Continue" from the prologue never leaves /auth: middleware would always
+  // 302 / → /auth again after router.replace).
+  const allowed = loadAllowedNamesFromEnv();
+  const raw = req.cookies.get(AUTH_COOKIE)?.value;
+  const key = raw ? normalizeReaderName(decodeURIComponent(raw)) : "";
+  const authed = Boolean(key && allowed.has(key));
+  const prologueComplete = req.cookies.get(PROLOGUE_COOKIE)?.value === "1";
   const alwaysPrologue = process.env.ORV_ALWAYS_PROLOGUE === "1";
-  if (!alwaysPrologue) {
-    const allowed = loadAllowedNamesFromEnv();
-    const raw = req.cookies.get(AUTH_COOKIE)?.value;
-    const key = raw ? normalizeReaderName(decodeURIComponent(raw)) : "";
-    if (key && allowed.has(key)) {
-      return NextResponse.next();
-    }
+
+  if (authed && (!alwaysPrologue || prologueComplete)) {
+    return NextResponse.next();
   }
 
   const url = req.nextUrl.clone();

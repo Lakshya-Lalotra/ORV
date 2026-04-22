@@ -11,6 +11,10 @@
  *   finishes the finale (client-side; not yet checked by middleware).
  * - **Emergency bypass** (deploy / QA): set `ORV_BYPASS_AUTH=1` so middleware
  *   does not redirect to `/auth` (see `middleware.ts`).
+ * - **Always prologue** (staging only): set `ORV_ALWAYS_PROLOGUE=1` so a
+ *   valid `orv-reader-key` alone does not skip the gate; users must also have
+ *   `orv-prologue-complete=1` (set when they finish the finale) or every full
+ *   load goes to `/auth` again.
  */
 
 export const PROLOGUE_COOKIE = "orv-prologue-complete";

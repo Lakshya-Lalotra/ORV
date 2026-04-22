@@ -546,7 +546,7 @@ export function AuthGate({ prologue = null, media: mediaProp = null }: AuthGateP
         preload="auto"
         className={
           phase === "reveal"
-            ? "fixed inset-0 z-0 h-full w-full object-cover transition-opacity duration-[1400ms] ease-out"
+            ? "pointer-events-none fixed inset-0 z-0 h-full w-full object-cover transition-opacity duration-[1400ms] ease-out"
             : "pointer-events-none fixed -left-[200vw] top-0 h-0 w-0 opacity-0"
         }
         style={
