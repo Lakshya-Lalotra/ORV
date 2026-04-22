@@ -1,83 +1,43 @@
 import "server-only";
-import { fetchContentJson } from "@/lib/content-fetch";
+import {
+  loadCorpusChapter,
+  loadCorpusChapterBySlug,
+  loadCorpusIndex,
+} from "@/lib/epub-corpus.server";
+import type {
+  SequelChapter,
+  SequelIndexEntry,
+  SequelSegment,
+  SequelSegmentKind,
+} from "@/lib/sequel-content-types";
 import type { ChapterIndexRow } from "@/lib/types";
 
 /**
- * Server-only loader for the ORV Sequel corpus.
- *
- * Source of truth is `content/sequel/` produced by
- * `npm run ingest:sequel` (reads `content/orv_sequel.epub`).
- * At runtime we lazy-fetch each JSON:
- *   - from R2 when `NEXT_PUBLIC_ORV_BLOB_BASE` is set
- *     (mirror the folder as `content/sequel/ch_N.json` in the bucket),
- *   - otherwise from the local filesystem.
- *
- * Never import from a Client Component.
+ * Server-only loader for the ORV Sequel corpus. Content is parsed on-demand
+ * from `content/orv_sequel.epub` via `epub-corpus.server.ts` — the EPUB is
+ * downloaded from R2 once per process and then parsed lazily per chapter
+ * with module-scoped caches. No parallel JSON tree is maintained.
  */
 
-export type SequelSegmentKind =
-  | "line"
-  | "notice"
-  | "quote"
-  | "window"
-  | "divider"
-  | "spacer";
+export type { SequelChapter, SequelIndexEntry, SequelSegment, SequelSegmentKind };
 
-export type SequelSegment = {
-  kind: SequelSegmentKind;
-  text: string;
-  title?: string;
-};
-
-export type SequelChapter = {
-  number: number;
-  slug: string;
-  title: string;
-  order: number;
-  segments: SequelSegment[];
-  authorNote: SequelSegment[];
-  sourceUrl: string;
-  scrapedAt: string;
-};
-
-export type SequelIndexEntry = {
-  number: number;
-  slug: string;
-  title: string;
-  order: number;
-};
-
-const INDEX_REL = "content/sequel/index.json";
-const chapterRel = (n: number) => `content/sequel/ch_${n}.json`;
-
-/** Returns the full canonical index (sequel/index.json). */
 export async function loadSequelIndex(): Promise<SequelIndexEntry[]> {
-  const indexed = await fetchContentJson<SequelIndexEntry[]>(INDEX_REL);
-  if (indexed && Array.isArray(indexed) && indexed.length > 0) {
-    return [...indexed].sort((a, b) => a.number - b.number);
-  }
-  return [];
+  return loadCorpusIndex("sequel");
 }
 
 export async function loadSequelChapter(
   number: number,
 ): Promise<SequelChapter | null> {
-  return fetchContentJson<SequelChapter>(chapterRel(number));
+  return loadCorpusChapter("sequel", number);
 }
 
 export async function loadSequelChapterBySlug(
   slug: string,
 ): Promise<SequelChapter | null> {
-  const match = /^orv-seq-ch-(\d+)$/.exec(slug);
-  if (!match) return null;
-  return loadSequelChapter(Number(match[1]));
+  return loadCorpusChapterBySlug("sequel", slug);
 }
 
-/**
- * Adapt the sequel index into `ChapterIndexRow[]` for StoryLanding. We
- * only use the index here (no per-chapter fetches) so the landing page
- * stays cheap even with hundreds of chapters.
- */
+/** Landing page rows — cheap projection over the index (no chapter parse). */
 export async function sequelChapterIndexRows(): Promise<ChapterIndexRow[]> {
   const list = await loadSequelIndex();
   return list.map((entry) => ({
@@ -91,7 +51,6 @@ export async function sequelChapterIndexRows(): Promise<ChapterIndexRow[]> {
   }));
 }
 
-/** Build prev/next navigation for the reader, relative to a number. */
 export async function sequelChapterNeighbors(number: number): Promise<{
   prev: SequelIndexEntry | null;
   next: SequelIndexEntry | null;

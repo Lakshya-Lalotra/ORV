@@ -1,37 +1,35 @@
 import "server-only";
-import { fetchContentJson } from "@/lib/content-fetch";
+import {
+  loadCorpusChapter,
+  loadCorpusChapterBySlug,
+  loadCorpusIndex,
+} from "@/lib/epub-corpus.server";
+import type {
+  SequelChapter,
+  SequelIndexEntry,
+} from "@/lib/sequel-content-types";
 import type { ChapterIndexRow } from "@/lib/types";
-import type { SequelChapter, SequelIndexEntry } from "@/lib/sequel-content";
 
 /**
- * Server-only loader for the one-shot / side corpus (`content/side/`).
- * Same layout as sequel-content; chapters come from `npm run ingest:side`
- * (reads `content/orv_side.epub`). Lazy-fetched from R2 or local fs.
+ * Server-only loader for the ORV one-shot / side corpus. Same strategy as
+ * `sequel-content.ts`: parse `content/orv_side.epub` at runtime (R2 →
+ * tmpdir once per process), cache in memory, no separate JSON index.
  */
 
-const INDEX_REL = "content/side/index.json";
-const chapterRel = (n: number) => `content/side/ch_${n}.json`;
-
 export async function loadSideIndex(): Promise<SequelIndexEntry[]> {
-  const indexed = await fetchContentJson<SequelIndexEntry[]>(INDEX_REL);
-  if (indexed && Array.isArray(indexed) && indexed.length > 0) {
-    return [...indexed].sort((a, b) => a.number - b.number);
-  }
-  return [];
+  return loadCorpusIndex("side");
 }
 
 export async function loadSideChapter(
   number: number,
 ): Promise<SequelChapter | null> {
-  return fetchContentJson<SequelChapter>(chapterRel(number));
+  return loadCorpusChapter("side", number);
 }
 
 export async function loadSideChapterBySlug(
   slug: string,
 ): Promise<SequelChapter | null> {
-  const match = /^orv-side-ch-(\d+)$/.exec(slug);
-  if (!match) return null;
-  return loadSideChapter(Number(match[1]));
+  return loadCorpusChapterBySlug("side", slug);
 }
 
 export async function sideChapterIndexRows(): Promise<ChapterIndexRow[]> {

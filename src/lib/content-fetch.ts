@@ -93,3 +93,37 @@ export async function fetchContentText(relPath: string): Promise<string | null> 
   }
   return readLocal<string>(relPath, parse);
 }
+
+/**
+ * Fetch binary bytes from R2 (if configured) else local fs. Returns null on
+ * failure. Caller owns the buffer. Used by the EPUB runtime loader to avoid
+ * shipping every chapter JSON in the repo / bucket.
+ */
+export async function fetchContentBuffer(relPath: string): Promise<Buffer | null> {
+  const clean = relPath.replace(/^\/+/, "");
+  if (!clean.startsWith("content/")) return null;
+
+  const url = blobUrl(relPath);
+  if (url) {
+    try {
+      const res = await fetch(url, {
+        next: { revalidate: 86400, tags: [`content-bin:${relPath}`] },
+      });
+      if (res.ok) {
+        const ab = await res.arrayBuffer();
+        return Buffer.from(ab);
+      }
+    } catch {
+      /* fall through to local fs */
+    }
+  }
+
+  const sub = clean.slice("content/".length).split("/").filter(Boolean);
+  if (sub.length === 0) return null;
+  const abs = path.join(process.cwd(), "content", ...sub);
+  try {
+    return await fs.readFile(abs);
+  } catch {
+    return null;
+  }
+}
