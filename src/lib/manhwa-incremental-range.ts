@@ -1,8 +1,8 @@
 import { loadManhwaMap } from "./chapter-payload";
 
 /** Highest `orv-ch-N` numeric N in the manhwa map, or -1 if none. */
-export function getMaxNumericOrvChapterFromMap(): number {
-  const map = loadManhwaMap();
+export async function getMaxNumericOrvChapterFromMap(): Promise<number> {
+  const map = await loadManhwaMap();
   let max = -1;
   for (const k of Object.keys(map)) {
     const m = /^orv-ch-(\d+)$/i.exec(k);
@@ -17,8 +17,8 @@ export type ManhwaIncrementalRange = { from: number; to: number };
  * Next numeric range to scrape after the latest `orv-ch-N` in the map.
  * Returns null if the map has no numeric chapters yet (run a full scrape first).
  */
-export function getNextManhwaIncrementalRange(): ManhwaIncrementalRange | null {
-  const max = getMaxNumericOrvChapterFromMap();
+export async function getNextManhwaIncrementalRange(): Promise<ManhwaIncrementalRange | null> {
+  const max = await getMaxNumericOrvChapterFromMap();
   if (max < 0) return null;
 
   const rawMax = process.env.ORV_MANHWA_INCREMENTAL_MAX?.trim();

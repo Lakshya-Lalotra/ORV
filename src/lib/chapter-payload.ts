@@ -1,6 +1,5 @@
-import fs from "node:fs";
-import path from "node:path";
 import type { Chapter, ChapterMood, ManhwaPanel, Segment } from "@prisma/client";
+import { fetchContentJson } from "@/lib/content-fetch";
 import { publicAssetUrl } from "@/lib/orv-blob-url";
 import type { ChapterIndexEntry, ChapterPayload, KeywordDef } from "./types";
 
@@ -8,8 +7,7 @@ type ChapterWithSegments = Chapter & {
   segments: (Segment & { panel: ManhwaPanel | null })[];
 };
 
-const PROJECT_ROOT = process.cwd();
-const MANHWA_MAP_PATH = path.join(PROJECT_ROOT, "content", "manhwa-map.json");
+const MANHWA_MAP_REL = "content/manhwa-map.json";
 const PANEL_ONLY_TEXT = "\u00A0";
 
 function chapterNumberFromSlug(slug: string): number | null {
@@ -41,17 +39,15 @@ function parseKeywords(raw: string): KeywordDef[] {
   }
 }
 
-export function loadManhwaMap(): Record<string, string[]> {
-  if (!fs.existsSync(MANHWA_MAP_PATH)) return {};
-  try {
-    return JSON.parse(fs.readFileSync(MANHWA_MAP_PATH, "utf8")) as Record<string, string[]>;
-  } catch {
-    return {};
-  }
+export async function loadManhwaMap(): Promise<Record<string, string[]>> {
+  const data = await fetchContentJson<Record<string, string[]>>(MANHWA_MAP_REL);
+  return data ?? {};
 }
 
-export function buildMapOnlyChapterPayload(slug: string): ChapterPayload | null {
-  const map = loadManhwaMap();
+export async function buildMapOnlyChapterPayload(
+  slug: string,
+): Promise<ChapterPayload | null> {
+  const map = await loadManhwaMap();
   const mappedPanels = map[slug];
   if (!mappedPanels?.length) return null;
 
@@ -77,8 +73,10 @@ export function buildMapOnlyChapterPayload(slug: string): ChapterPayload | null 
   };
 }
 
-export function buildExtraMapChapterIndexEntries(existingSlugs: Set<string>): ChapterIndexEntry[] {
-  const map = loadManhwaMap();
+export async function buildExtraMapChapterIndexEntries(
+  existingSlugs: Set<string>,
+): Promise<ChapterIndexEntry[]> {
+  const map = await loadManhwaMap();
   return Object.keys(map)
     .filter((slug) => !existingSlugs.has(slug) && /^orv-ch-\d+$/i.test(slug))
     .sort((a, b) => (chapterNumberFromSlug(a) ?? 0) - (chapterNumberFromSlug(b) ?? 0))
@@ -88,7 +86,9 @@ export function buildExtraMapChapterIndexEntries(existingSlugs: Set<string>): Ch
     }));
 }
 
-export function buildExtraMapChapterIndexRows(existingSlugs: Set<string>): {
+export async function buildExtraMapChapterIndexRows(
+  existingSlugs: Set<string>,
+): Promise<{
   id: string;
   slug: string;
   title: string;
@@ -96,8 +96,8 @@ export function buildExtraMapChapterIndexRows(existingSlugs: Set<string>): {
   intensity: number;
   order: number;
   segmentCount: number;
-}[] {
-  const map = loadManhwaMap();
+}[]> {
+  const map = await loadManhwaMap();
   return Object.entries(map)
     .filter(([slug]) => !existingSlugs.has(slug) && /^orv-ch-\d+$/i.test(slug))
     .sort(
@@ -117,8 +117,10 @@ export function buildExtraMapChapterIndexRows(existingSlugs: Set<string>): {
     });
 }
 
-export function buildChapterPayload(chapter: ChapterWithSegments): ChapterPayload {
-  const map = loadManhwaMap();
+export async function buildChapterPayload(
+  chapter: ChapterWithSegments,
+): Promise<ChapterPayload> {
+  const map = await loadManhwaMap();
   const mappedPanels = map[chapter.slug] ?? [];
 
   const segments = chapter.segments.map((segment) => ({

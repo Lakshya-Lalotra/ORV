@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import {
   getNextManhwaIncrementalRange,
   defaultManhwaChapter0Url,
+  type ManhwaIncrementalRange,
 } from "@/lib/manhwa-incremental-range";
 import { spawnManhwaIncrementalScrape } from "@/lib/run-manhwa-incremental-scrape";
 
@@ -23,7 +24,7 @@ function logCron(message: string, extra?: Record<string, unknown>) {
   console.log(JSON.stringify(payload));
 }
 
-async function runScrapeInBackground(range: ReturnType<typeof getNextManhwaIncrementalRange>) {
+async function runScrapeInBackground(range: ManhwaIncrementalRange | null) {
   if (!range) return;
   logCron("manhwa incremental scrape start", { from: range.from, to: range.to });
   try {
@@ -62,7 +63,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const range = getNextManhwaIncrementalRange();
+  const range = await getNextManhwaIncrementalRange();
   if (!range) {
     return NextResponse.json({
       ok: true,

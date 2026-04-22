@@ -17,7 +17,9 @@ export async function GET(
     },
   });
 
-  const payload = chapter ? buildChapterPayload(chapter) : buildMapOnlyChapterPayload(slug);
+  const payload = chapter
+    ? await buildChapterPayload(chapter)
+    : await buildMapOnlyChapterPayload(slug);
 
   if (!payload) {
     return NextResponse.json({ error: "Chapter not found" }, { status: 404 });

@@ -8,7 +8,7 @@ export const metadata = {
   description: "Side stories from the ORV universe (local EPUB).",
 };
 
-export default function SideStoriesLandingPage() {
-  const rows = sideChapterIndexRows();
+export default async function SideStoriesLandingPage() {
+  const rows = await sideChapterIndexRows();
   return <StoryLanding chapters={rows} series="side" />;
 }

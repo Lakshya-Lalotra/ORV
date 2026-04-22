@@ -20,8 +20,8 @@ import {
 
 const PROJECT_ROOT = process.cwd();
 
-function main() {
-  const range = getNextManhwaIncrementalRange();
+async function main() {
+  const range = await getNextManhwaIncrementalRange();
   if (!range) {
     console.log(
       "[manhwa-incremental] No numeric chapters in manhwa-map.json yet. Run a full range first, e.g.\n" +
@@ -60,4 +60,4 @@ function main() {
   process.exit(result.status ?? 1);
 }
 
-main();
+void main();

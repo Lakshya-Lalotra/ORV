@@ -30,7 +30,7 @@ export default async function AuthPage({ searchParams }: AuthPageProps) {
     (await cookies()).delete(PROLOGUE_COOKIE);
   }
 
-  const prologue = loadProloguePayload();
+  const prologue = await loadProloguePayload();
   const media = getRevealMediaUrls();
   // Fresh mount when replay=1 (see comment above).
   const remountKey = replay ? `replay-${Date.now()}` : "default";

@@ -10,6 +10,6 @@ export const metadata = {
 };
 
 export default async function SequelLandingPage() {
-  const rows = sequelChapterIndexRows();
+  const rows = await sequelChapterIndexRows();
   return <StoryLanding chapters={rows} series="sequel" />;
 }

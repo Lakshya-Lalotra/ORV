@@ -28,12 +28,12 @@ export default async function ChapterPage({
   const { slug } = await params;
 
   if (/^orv-seq-ch-\d+$/.test(slug)) {
-    const corpus = loadSequelChapterBySlug(slug);
+    const [corpus, rawIndex] = await Promise.all([
+      loadSequelChapterBySlug(slug),
+      loadSequelIndex(),
+    ]);
     if (!corpus) notFound();
-    const index = loadSequelIndex().map((e) => ({
-      slug: e.slug,
-      title: e.title,
-    }));
+    const index = rawIndex.map((e) => ({ slug: e.slug, title: e.title }));
     const i = index.findIndex((c) => c.slug === slug);
     const prevSlug = i > 0 ? index[i - 1]!.slug : null;
     const nextSlug =
@@ -47,12 +47,12 @@ export default async function ChapterPage({
   }
 
   if (/^orv-side-ch-\d+$/.test(slug)) {
-    const corpus = loadSideChapterBySlug(slug);
+    const [corpus, rawIndex] = await Promise.all([
+      loadSideChapterBySlug(slug),
+      loadSideIndex(),
+    ]);
     if (!corpus) notFound();
-    const index = loadSideIndex().map((e) => ({
-      slug: e.slug,
-      title: e.title,
-    }));
+    const index = rawIndex.map((e) => ({ slug: e.slug, title: e.title }));
     const i = index.findIndex((c) => c.slug === slug);
     const prevSlug = i > 0 ? index[i - 1]!.slug : null;
     const nextSlug =
@@ -86,7 +86,7 @@ export default async function ChapterPage({
     slug: r.slug,
     title: r.title,
   }));
-  const extraChapters = buildExtraMapChapterIndexEntries(
+  const extraChapters = await buildExtraMapChapterIndexEntries(
     new Set(dbChapters.map((r) => r.slug)),
   );
   const allChapters: ChapterIndexEntry[] = [...extraChapters, ...dbChapters].sort(
@@ -104,8 +104,8 @@ export default async function ChapterPage({
     i >= 0 && i < allChapters.length - 1 ? allChapters[i + 1]!.slug : null;
 
   const payload = chapter
-    ? buildChapterPayload(chapter)
-    : buildMapOnlyChapterPayload(slug);
+    ? await buildChapterPayload(chapter)
+    : await buildMapOnlyChapterPayload(slug);
   if (!payload) notFound();
 
   return (

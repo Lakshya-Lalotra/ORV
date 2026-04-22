@@ -52,9 +52,14 @@ next-env.d.ts
 /content/*.txt
 !/content/prologue.example.txt
 /content/*.epub
-# manhwa-map.json maps slugs → panel URLs and must be present on the server
-# so the chapter list is not empty. Small JSON, safe to commit.
-# /content/manhwa-map.json
+# Runtime content is lazy-fetched from R2 at runtime (NEXT_PUBLIC_ORV_BLOB_BASE)
+# with a local-fs fallback for dev. Upload the tree below to your R2 bucket
+# (`content/...` prefix) after running `ingest:sequel`, `ingest:side`, and
+# `build:manhwa-map`. Kept out of git so the repo stays small.
+/content/manhwa-map.json
+/content/prologue.json
+/content/sequel/
+/content/side/
 # Local panel masters (often large); use npm run build:manhwa-map -- --sync → public/panels
 /content/panels
 # Published panel JPEGs (can be GB+); deploy via CI/scrape or sync separately — do not commit

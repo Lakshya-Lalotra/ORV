@@ -32,7 +32,7 @@ export default async function ChaptersIndexPage() {
     segmentCount: ch._count.segments,
   }));
 
-  const extraRows = buildExtraMapChapterIndexRows(
+  const extraRows = await buildExtraMapChapterIndexRows(
     new Set(rows.map((row) => row.slug)),
   );
   const mergedRows = [...rows, ...extraRows].sort((a, b) => {
