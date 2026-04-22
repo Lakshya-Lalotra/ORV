@@ -2,9 +2,11 @@
  * Shared constants, types and helpers for the post-auth reveal scene (`AuthGate`).
  */
 
+import { publicAssetUrl } from "@/lib/orv-blob-url";
+
 /** Default paths under `public/` or under blob base — use `getRevealMediaUrls()` at runtime for deployed URLs. */
-export const REVEAL_VIDEO_SRC = "/Video/gilded-lily-animation.mp4";
-export const REVEAL_AUDIO_SRC = "/audio/gilded-lily.mp3";
+export const REVEAL_VIDEO_SRC = publicAssetUrl("/Video/gilded-lily-animation.mp4");
+export const REVEAL_AUDIO_SRC = publicAssetUrl("/audio/gilded-lily.mp3");
 
 export const SONG_START_TIME_S = 10;
 export const SONG_INITIAL_DELAY_MS = 2800;
@@ -24,7 +26,7 @@ export const FINALE_LEAD_IN_MS = 900;
 /** How many ms AFTER video end the tap prompt becomes available. */
 export const FINALE_TAP_DELAY_MS = 3200;
 /** The single hero illustration shown at the finale. */
-export const FINALE_HERO_ART = "/art/finale-hero.jpg";
+export const FINALE_HERO_ART = publicAssetUrl("/art/finale-hero.jpg");
 
 export type RevealEmphasis = "soft" | "wobble" | "breathe" | "command";
 

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { Chapter, ChapterMood, ManhwaPanel, Segment } from "@prisma/client";
+import { publicAssetUrl } from "@/lib/orv-blob-url";
 import type { ChapterIndexEntry, ChapterPayload, KeywordDef } from "./types";
 
 type ChapterWithSegments = Chapter & {
@@ -62,7 +63,7 @@ export function buildMapOnlyChapterPayload(slug: string): ChapterPayload | null 
     intensity: 55,
     manhwaPanels: mappedPanels.map((imageUrl, index) => ({
       id: `${slug}-panel-${index + 1}`,
-      imageUrl,
+      imageUrl: publicAssetUrl(imageUrl),
       alt: `${slug} panel ${index + 1}`,
     })),
     segments: mappedPanels.map((_, index) => ({
@@ -127,21 +128,21 @@ export function buildChapterPayload(chapter: ChapterWithSegments): ChapterPayloa
     text: segment.text,
     keywords: parseKeywords(segment.keywordsJson),
     panel: segment.panel
-      ? { imageUrl: segment.panel.imageUrl, alt: segment.panel.alt }
+      ? { imageUrl: publicAssetUrl(segment.panel.imageUrl), alt: segment.panel.alt }
       : null,
   }));
   const manhwaPanels =
     mappedPanels.length > 0
       ? mappedPanels.map((imageUrl, index) => ({
           id: `${chapter.slug}-panel-${index + 1}`,
-          imageUrl,
+          imageUrl: publicAssetUrl(imageUrl),
           alt: `${chapter.slug} panel ${index + 1}`,
         }))
       : segments
           .filter((segment) => segment.panel)
           .map((segment) => ({
             id: segment.id,
-            imageUrl: segment.panel!.imageUrl,
+            imageUrl: publicAssetUrl(segment.panel!.imageUrl),
             alt: segment.panel!.alt,
           }));
 
