@@ -15,11 +15,17 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const allowed = loadAllowedNamesFromEnv();
-  const raw = req.cookies.get(AUTH_COOKIE)?.value;
-  const key = raw ? normalizeReaderName(decodeURIComponent(raw)) : "";
-  if (key && allowed.has(key)) {
-    return NextResponse.next();
+  // QA / staging: do not use the allowlisted cookie to skip the gate—every
+  // server navigation goes through `/auth` and the prologue. Client-side
+  // routing can still open other routes without a new request.
+  const alwaysPrologue = process.env.ORV_ALWAYS_PROLOGUE === "1";
+  if (!alwaysPrologue) {
+    const allowed = loadAllowedNamesFromEnv();
+    const raw = req.cookies.get(AUTH_COOKIE)?.value;
+    const key = raw ? normalizeReaderName(decodeURIComponent(raw)) : "";
+    if (key && allowed.has(key)) {
+      return NextResponse.next();
+    }
   }
 
   const url = req.nextUrl.clone();
@@ -31,8 +37,12 @@ export function middleware(req: NextRequest) {
   return NextResponse.redirect(url);
 }
 
+// Include `"/"` explicitly: a single pattern like `/((?!…).*)` can fail to
+// run middleware on the home document in some Next.js versions, which breaks
+// auth / ORV_ALWAYS_PROLOGUE for reloads on `/`.
 export const config = {
   matcher: [
+    "/",
     "/((?!api|_next/static|_next/image|favicon.ico|branding|audio|art|Video|video|panels|.*\\.(?:png|jpg|jpeg|webp|svg|gif|ico|mp3|wav|ogg|txt|mp4|webm|mov|m4v|weba)).*)",
   ],
 };
