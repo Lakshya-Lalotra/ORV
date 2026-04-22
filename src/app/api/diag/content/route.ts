@@ -23,6 +23,7 @@ import { NextResponse } from "next/server";
 
 import fs from "node:fs/promises";
 import path from "node:path";
+import os from "node:os";
 
 export const dynamic = "force-dynamic";
 
@@ -116,11 +117,23 @@ async function probeOne(rel: string, kind: string): Promise<ProbeResult> {
   return out;
 }
 
+function timingSafeEqualStr(a: string, b: string): boolean {
+  // Constant-time-ish string compare so timing on short secrets doesn't
+  // leak length/prefix info. Not perfect (JS strings differ from Buffers)
+  // but good enough for the admin-only probe.
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) {
+    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const key = url.searchParams.get("key") ?? "";
   const secret = (process.env.CRON_SECRET ?? "").trim();
-  if (!secret || key !== secret) {
+  if (!secret || !timingSafeEqualStr(key, secret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -133,7 +146,7 @@ export async function GET(req: Request) {
     {
       blobBase: blobBase() || null,
       cwd: process.cwd(),
-      tmpdir: require("node:os").tmpdir(),
+      tmpdir: os.tmpdir(),
       results,
     },
     { status: 200 },

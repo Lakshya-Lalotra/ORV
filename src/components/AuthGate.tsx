@@ -375,23 +375,29 @@ export function AuthGate({ prologue = null, media: mediaProp = null }: AuthGateP
       window.removeEventListener("pointerdown", retry);
       window.removeEventListener("keydown", retry);
     };
-  }, [phase, script.length]);
+    // `script` is captured at effect start into `scriptLines`; we only
+    // want this effect to rerun when phase or the script's line count
+    // change (not on every re-render that produces a new array).
+  }, [phase, script.length, script]);
 
-  // Unmount cleanup
+  // Unmount cleanup. We snapshot ref targets into locals so the cleanup
+  // function doesn't read `videoRef.current` / `audioRef.current` after
+  // React may have already detached them (fixes react-hooks warning).
   useEffect(() => {
+    const videoEl = videoRef.current;
+    const audioEl = audioRef.current;
+    const timersRef = revealTimersRef;
     return () => {
-      const video = videoRef.current;
-      const audio = audioRef.current;
-      if (video) {
-        video.pause();
-        video.src = "";
+      if (videoEl) {
+        videoEl.pause();
+        videoEl.src = "";
       }
-      if (audio) {
-        audio.pause();
-        audio.src = "";
+      if (audioEl) {
+        audioEl.pause();
+        audioEl.src = "";
       }
-      for (const id of revealTimersRef.current) window.clearTimeout(id);
-      revealTimersRef.current = [];
+      for (const id of timersRef.current) window.clearTimeout(id);
+      timersRef.current = [];
       if (rampIntervalRef.current !== null) {
         window.clearInterval(rampIntervalRef.current);
         rampIntervalRef.current = null;
@@ -419,7 +425,11 @@ export function AuthGate({ prologue = null, media: mediaProp = null }: AuthGateP
     }
 
     const destination = postAuthDestination(search.get("next"));
-    document.cookie = `${PROLOGUE_COOKIE}=1;path=/;max-age=${ONE_YEAR_SECONDS};SameSite=Lax`;
+    // Append ;Secure on HTTPS so this cookie is never sent over plain
+    // HTTP (even though the deploy is HTTPS-only, the Secure flag keeps
+    // it that way through local reverse-proxies / dev tunnels).
+    const secureFlag = window.location.protocol === "https:" ? ";Secure" : "";
+    document.cookie = `${PROLOGUE_COOKIE}=1;path=/;max-age=${ONE_YEAR_SECONDS};SameSite=Lax${secureFlag}`;
     router.replace(destination);
     router.refresh();
   }, [router, search]);

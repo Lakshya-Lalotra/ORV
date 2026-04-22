@@ -22,6 +22,18 @@ export const metadata: Metadata = {
   title: "ORV Reader — Omniscient Reader's Viewpoint",
   description:
     "Choose web novel or manhwa, then read with audio and a Prisma-backed chapter API.",
+  // Private allowlist-only deployment: don't invite crawlers to the
+  // content or to dead-end behind the auth gate.
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: { index: false, follow: false },
+  },
+  // Prevent social scrapers from republishing the prologue / first
+  // chapter on referral cards.
+  referrer: "strict-origin-when-cross-origin",
+  formatDetection: { telephone: false, email: false, address: false },
 };
 
 /**

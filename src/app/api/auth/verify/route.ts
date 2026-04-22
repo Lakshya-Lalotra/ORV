@@ -2,18 +2,18 @@ import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { isAllowedReaderName, normalizeReaderName } from "@/lib/allowed-readers";
 import { prisma } from "@/lib/prisma";
+import { clientIpFromHeaders } from "@/lib/client-ip";
+import { rateLimit } from "@/lib/rate-limit";
 
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 const AUTH_COOKIE = "orv-reader-key";
 
-function clientIp(request: Request): string | null {
-  const xf = request.headers.get("x-forwarded-for");
-  if (xf) {
-    const first = xf.split(",")[0]?.trim();
-    if (first) return first;
-  }
-  return request.headers.get("x-real-ip");
-}
+/**
+ * 10 attempts per IP per 10 minutes. Private allowlist — most users
+ * succeed first try, so legitimate traffic never hits this. Blocks
+ * distributed name-guessing without locking out a refresh-happy reader.
+ */
+const VERIFY_LIMIT = { limit: 10, windowMs: 10 * 60 * 1000 };
 
 function hashIp(ip: string | null): string | null {
   if (!ip) return null;
@@ -22,6 +22,23 @@ function hashIp(ip: string | null): string | null {
 }
 
 export async function POST(request: Request) {
+  const ip = clientIpFromHeaders(request.headers);
+  const rl = rateLimit(`auth-verify:${ip}`, VERIFY_LIMIT);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { ok: false, error: "Too many attempts. Try again later." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(rl.retryAfter),
+          "X-RateLimit-Limit": String(VERIFY_LIMIT.limit),
+          "X-RateLimit-Remaining": "0",
+          "X-RateLimit-Reset": String(Math.floor(rl.resetAt / 1000)),
+        },
+      },
+    );
+  }
+
   let body: { name?: string; deviceId?: string };
   try {
     body = (await request.json()) as { name?: string; deviceId?: string };
@@ -31,13 +48,12 @@ export async function POST(request: Request) {
 
   const raw = typeof body.name === "string" ? body.name : "";
   const name = normalizeReaderName(raw);
-  if (!name) {
+  if (!name || name.length > 120) {
     return NextResponse.json({ ok: false, error: "Name required" }, { status: 400 });
   }
 
   const allowed = isAllowedReaderName(name);
   const ua = request.headers.get("user-agent") ?? "";
-  const ip = clientIp(request);
   const ipHash = hashIp(ip);
   const deviceHint =
     typeof body.deviceId === "string" && body.deviceId.length < 200

@@ -299,16 +299,14 @@ export function StoryLanding({ chapters, series, manhwaReadySlugs }: Props) {
       [...chaptersForUi].sort((a, b) => a.order - b.order)[0] ?? null,
     [chaptersForUi],
   );
+  // Derive the effective sort inline instead of mirroring it into state:
+  // this removes a cascading setState-in-effect (flagged by React's
+  // `set-state-in-effect` rule) and preserves the reader's saved
+  // `title-*` preference when they hop back to novel mode.
   const effectiveSortKey: SortKey =
     manhwaMode && (sortKey === "title-asc" || sortKey === "title-desc")
       ? "order-asc"
       : sortKey;
-
-  useEffect(() => {
-    if (manhwaMode && (sortKey === "title-asc" || sortKey === "title-desc")) {
-      setSortKey("order-asc");
-    }
-  }, [manhwaMode, sortKey]);
 
   const visible = useMemo(() => {
     const filtered = chaptersForUi.filter((ch) => matchesQuery(ch, query));

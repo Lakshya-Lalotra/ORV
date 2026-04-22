@@ -12,7 +12,6 @@ import { useReadingProgress } from "@/hooks/useReadingProgress";
 import { useScrollAmbient } from "@/hooks/useScrollAmbient";
 import {
   playGlitchSystem,
-  playImpact,
   resumeAudio,
   speakLine,
 } from "@/lib/audio-engine";

@@ -1,0 +1,7 @@
+# This deployment is a private, allowlisted reader gate for one user.
+# Content is copyrighted third-party material (novel + manhwa) that must
+# never be indexed. The reader name gate + auth cookie already block
+# unauthenticated scrapers, but this is the polite first line of defense.
+
+User-agent: *
+Disallow: /

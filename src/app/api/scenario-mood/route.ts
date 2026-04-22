@@ -1,13 +1,28 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import {
   classifyScenarioLocal,
   coerceScenarioVariant,
   type ScenarioVariant,
 } from "@/lib/scenario-music";
+import { isAuthenticatedReader } from "@/lib/require-reader";
+import { clientIpFromHeaders } from "@/lib/client-ip";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
-type Body = { title?: string; excerpt?: string };
+/**
+ * The local classifier is cheap and pure-JS; the OpenAI hop costs money.
+ * Keep a tight budget even for allowlisted readers so a stuck tab
+ * doesn't run up the bill (20 calls/min/IP is plenty for real usage:
+ * one classification per chapter load).
+ */
+const MOOD_LIMIT = { limit: 20, windowMs: 60 * 1000 };
+
+const bodySchema = z.object({
+  title: z.string().max(400).optional(),
+  excerpt: z.string().max(8000).optional(),
+});
 
 async function openAiClassify(
   title: string,
@@ -64,15 +79,33 @@ async function openAiClassify(
 }
 
 export async function POST(req: Request) {
-  let body: Body;
+  if (!(await isAuthenticatedReader())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const ip = clientIpFromHeaders(req.headers);
+  const rl = rateLimit(`scenario-mood:${ip}`, MOOD_LIMIT);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "Rate limited" },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfter) } },
+    );
+  }
+
+  let parsedBody: unknown;
   try {
-    body = (await req.json()) as Body;
+    parsedBody = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const title = typeof body.title === "string" ? body.title : "";
-  const excerpt = typeof body.excerpt === "string" ? body.excerpt : "";
+  const parsed = bodySchema.safeParse(parsedBody);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid body" }, { status: 400 });
+  }
+
+  const title = parsed.data.title ?? "";
+  const excerpt = parsed.data.excerpt ?? "";
 
   const local = classifyScenarioLocal(title, excerpt);
   const ai = await openAiClassify(title, excerpt);
