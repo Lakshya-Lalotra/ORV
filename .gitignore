@@ -78,3 +78,6 @@ next-env.d.ts
 # local next logs
 .next-start*.log
 tmp_*.html
+
+# Personal IP cheat-sheet for audit:dehash (keep real IPs out of git)
+/scripts/known-ips.txt

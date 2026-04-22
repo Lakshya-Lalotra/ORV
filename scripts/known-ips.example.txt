@@ -1,0 +1,14 @@
+# Known IPs for `npm run audit:dehash -- --file=scripts/known-ips.txt`.
+# Copy this file to `scripts/known-ips.txt` and fill in real values.
+# `known-ips.txt` is gitignored so your personal cheat-sheet never ships.
+#
+# One IP per line. `#` starts a comment. Blank lines are ignored.
+# Optional label after whitespace becomes the printed name.
+
+# Format:
+# <ip>  <label>
+#
+# Examples:
+# 203.0.113.42    Kim Dokja
+# 198.51.100.17   Lakshya pixel
+# 2001:db8::1     Sia MacBook

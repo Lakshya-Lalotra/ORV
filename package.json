@@ -27,6 +27,7 @@
     "upload:r2-branding": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/upload-branding-r2.ps1",
     "upload:r2-epub": "node ./scripts/upload-epub-r2.mjs",
     "audit:logins": "tsx scripts/audit-logins.ts",
+    "audit:dehash": "tsx scripts/audit-dehash.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {
