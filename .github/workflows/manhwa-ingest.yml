@@ -1,0 +1,124 @@
+# Incremental manhwa scrape → R2 (Tuesday UTC, every 2 hours) + optional Neon + notify.
+#
+# Schedule: `0 */2 * * 2` = minute 0 on Tuesday at hours 0,2,4,…,22 UTC (12 runs per Tuesday).
+# GitHub-hosted jobs are capped at 6h each, so we cannot run one job that sleeps 24h; multiple
+# cron triggers achieve the same "retry every 2h on Tuesday" pattern.
+#
+# --- Secrets (repo → Settings → Secrets and variables → Actions → Secrets) ---
+#   NEXT_PUBLIC_ORV_BLOB_BASE   Public R2/CDN base URL, no trailing slash.
+#   R2_ACCESS_KEY_ID            R2 S3 API key (mapped to AWS_ACCESS_KEY_ID in the job).
+#   R2_SECRET_ACCESS_KEY        R2 S3 secret.
+#   R2_BUCKET                   Bucket name.
+#   R2_ENDPOINT                 https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+#   MANHWA_NOTIFY_URL           Optional. ntfy topic URL, e.g. https://ntfy.sh/your-secret-topic
+#                               (POST body = plain text message). If unset, no push notification.
+#   DATABASE_URL                Optional; only used when MANHWA_LOG_NEON variable is true.
+#
+# --- Variables (Settings → Secrets and variables → Actions → Variables) ---
+#   MANHWA_LOG_NEON             Set exactly to `true` to INSERT a row into Neon after each run.
+#
+# --- You run once in Neon (if MANHWA_LOG_NEON=true) ---
+#   CREATE TABLE IF NOT EXISTS manhwa_cron_log (
+#     id bigserial PRIMARY KEY,
+#     ran_at timestamptz NOT NULL DEFAULT now(),
+#     status text NOT NULL,
+#     detail text
+#   );
+#
+# Exit codes from `npm run scrape:manhwa:new` (see scripts/scrape-manhwa-incremental.ts):
+#   0  — scraped a computed range successfully
+#   10 — no chapter window (nothing to do / at cap / no baseline)
+#   1+ — child scraper failed
+
+name: Manhwa ingest (scrape → R2)
+
+on:
+  schedule:
+    - cron: "0 */2 * * 2"
+  workflow_dispatch:
+
+concurrency:
+  group: manhwa-ingest
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      NEXT_PUBLIC_ORV_BLOB_BASE: ${{ secrets.NEXT_PUBLIC_ORV_BLOB_BASE }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      AWS_EC2_METADATA_DISABLED: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install psql (Neon log)
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Install npm deps
+        run: npm ci
+
+      - name: Incremental scrape
+        id: scrape
+        run: |
+          set +e
+          npm run scrape:manhwa:new
+          code=$?
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload panels + map to R2
+        if: steps.scrape.outputs.exit_code == '0'
+        run: |
+          set -euo pipefail
+          aws s3 sync "public/panels" "s3://${R2_BUCKET}/panels" \
+            --endpoint-url "${R2_ENDPOINT}" --region auto
+          aws s3 cp "content/manhwa-map.json" "s3://${R2_BUCKET}/content/manhwa-map.json" \
+            --endpoint-url "${R2_ENDPOINT}" --region auto
+
+      - name: Log run to Neon
+        if: vars.MANHWA_LOG_NEON == 'true'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          CODE: ${{ steps.scrape.outputs.exit_code }}
+        run: |
+          set -euo pipefail
+          if [ "$CODE" = "0" ]; then
+            psql "${DATABASE_URL}" -v ON_ERROR_STOP=1 -c \
+              "INSERT INTO manhwa_cron_log (status, detail) VALUES ('ok', 'github-actions manhwa-ingest');"
+          elif [ "$CODE" = "10" ]; then
+            psql "${DATABASE_URL}" -v ON_ERROR_STOP=1 -c \
+              "INSERT INTO manhwa_cron_log (status, detail) VALUES ('no_range', 'exit 10 no chapter window');"
+          else
+            psql "${DATABASE_URL}" -v ON_ERROR_STOP=1 -c \
+              "INSERT INTO manhwa_cron_log (status, detail) VALUES ('scrape_error', 'exit ${CODE}');"
+          fi
+
+      - name: Notify (no chapter window or scrape error)
+        if: steps.scrape.outputs.exit_code != '0'
+        env:
+          NOTIFY_URL: ${{ secrets.MANHWA_NOTIFY_URL }}
+          CODE: ${{ steps.scrape.outputs.exit_code }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "${NOTIFY_URL:-}" ]; then
+            echo "MANHWA_NOTIFY_URL not set — enable a secret to receive push notifications."
+            exit 0
+          fi
+          if [ "$CODE" = "10" ]; then
+            BODY="ORV manhwa: no chapter window this run (exit 10). Retries: every 2h UTC Tuesday until end of day slots; full cycle again next Tuesday. ${RUN_URL}"
+          else
+            BODY="ORV manhwa: scrape failed (exit ${CODE}). ${RUN_URL}"
+          fi
+          curl -fsS -m 30 --data-raw "$BODY" "$NOTIFY_URL"

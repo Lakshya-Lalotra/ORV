@@ -3,6 +3,11 @@
  *
  *   npm run scrape:manhwa:new
  *
+ * Exit codes (for CI / cron):
+ *   0 — A numeric range was computed and the child scraper exited 0.
+ *   10 — No range to scrape (empty map, no numeric slugs yet, or from > to at cap).
+ *   1+ — Child scraper exit status when a range was attempted (non-zero = failure).
+ *
  * Env:
  *   ORV_MANHWA_INCREMENTAL_MAX — how many new chapter numbers to try (default 5, max 50)
  *   ORV_MANHWA_SCRAPE_TO_CAP — optional upper bound for --to (e.g. match site latest)
@@ -24,10 +29,11 @@ async function main() {
   const range = await getNextManhwaIncrementalRange();
   if (!range) {
     console.log(
-      "[manhwa-incremental] No numeric chapters in manhwa-map.json yet. Run a full range first, e.g.\n" +
+      "[manhwa-incremental] No chapter window to scrape (no baseline, or already past cap). Run a full range first if the map is empty, e.g.\n" +
         '  npm run scrape:manhwa -- --from 0 --to 50 --url "https://www.mangaread.org/manga/omniscient-readers-viewpoint/chapter-0/"',
     );
-    process.exit(0);
+    // Distinct from child failure so CI can notify without treating as a crash.
+    process.exit(10);
   }
 
   const url = defaultManhwaChapter0Url();
