@@ -48,7 +48,8 @@ type CardDef = {
   subtitle?: string;
 };
 
-const ANIME_TRAILER_EMBED = "https://www.youtube.com/embed/jzIGTLlqeRE";
+/** Must match `frame-src` in `next.config.ts` (youtube-nocookie only). */
+const ANIME_TRAILER_EMBED = "https://www.youtube-nocookie.com/embed/jzIGTLlqeRE";
 
 const CREDIT_PROLOGUE_SONG =
   "https://www.youtube.com/watch?v=X8NOGvc84xc";
