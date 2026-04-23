@@ -108,12 +108,27 @@ body:has(.orv-auth-gate) {
  * Native <select> popups use OS styling. A dark page can still open a light-colored
  * list with light text (unreadable). `color-scheme` aligns the picker with
  * `data-theme` on <html> (ReaderContext) — Chrome / Edge / Firefox / Safari.
+ *
+ * Some browsers (notably Windows Chrome/Edge) don't fully honor `color-scheme`
+ * for <option> rendering, so we additionally force the option colors to the
+ * reader palette. Option styling support is browser-specific, but setting
+ * `background` + `color` is broadly respected and gives us the dark/light
+ * match we want instead of a bright OS default.
  */
 :root[data-theme="dark"] select {
   color-scheme: dark;
 }
 :root[data-theme="light"] select {
   color-scheme: light;
+}
+select option {
+  background-color: var(--reader-bg);
+  color: var(--reader-fg);
+}
+select option:checked,
+select option:hover {
+  background-color: color-mix(in srgb, var(--accent) 30%, var(--reader-bg));
+  color: var(--reader-fg);
 }
 
 ::selection {
