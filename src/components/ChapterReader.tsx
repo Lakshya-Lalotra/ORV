@@ -45,6 +45,36 @@ function progressBucketForChapterSlug(
   return viewMode;
 }
 
+/**
+ * Sequel + side corpus chapters are text-only (no manhwa panels on R2),
+ * so the reader should render them as prose even when the global
+ * `settings.viewMode` is "manhwa". Detecting by slug keeps the rule
+ * local to the reader — the landing pages for those series already
+ * route through `/chapter/orv-{seq,side}-ch-N` unchanged.
+ */
+function isTextOnlyCorpusSlug(slug: string): boolean {
+  return slug.startsWith("orv-seq-ch-") || slug.startsWith("orv-side-ch-");
+}
+
+/**
+ * Extract the main-novel chapter number from `orv-ch-N`. Used in manhwa
+ * mode where the header / jump list show the compact "Ch. N" label
+ * (matches the landing-page card) instead of the full novel subtitle.
+ */
+function mainNovelChapterNumberFromSlug(slug: string): number | null {
+  const match = /^orv-ch-(\d+)$/i.exec(slug);
+  if (!match) return null;
+  const num = Number.parseInt(match[1]!, 10);
+  return Number.isFinite(num) ? num : null;
+}
+
+function manhwaChapterLabel(slug: string, fallback: string): string {
+  const num = mainNovelChapterNumberFromSlug(slug);
+  if (num === null) return fallback;
+  if (num === 0) return "Ch. 0 · Prologue";
+  return `Ch. ${num}`;
+}
+
 type ChapterReaderProps = {
   chapter: ChapterPayload;
   nav: {
@@ -120,8 +150,13 @@ export function ChapterReader({ chapter, nav }: ChapterReaderProps) {
   const [scrollRatio, setScrollRatio] = useState(0);
   const segsRef = useRef(chapter.segments);
   const rootRef = useRef<HTMLDivElement>(null);
-  const novelMode = settings.viewMode === "novel";
-  const manhwaMode = settings.viewMode === "manhwa";
+  // Sequel / side corpus chapters ship as EPUB prose only — ignore the
+  // global `viewMode` for those slugs and always render them as novel
+  // text, otherwise the user hits a "No local panels…" dead-end when
+  // their last reader session was in manhwa mode.
+  const forceNovelMode = isTextOnlyCorpusSlug(chapter.slug);
+  const novelMode = forceNovelMode || settings.viewMode === "novel";
+  const manhwaMode = !forceNovelMode && settings.viewMode === "manhwa";
   const manhwaPaged = manhwaMode && settings.manhwaPanelLayout === "paged";
 
   const manhwaReadySet = useMemo(() => {
@@ -497,7 +532,7 @@ export function ChapterReader({ chapter, nav }: ChapterReaderProps) {
                 Omniscient Reader&apos;s Viewpoint
               </p>
               <h1 className="truncate text-base font-medium tracking-tight sm:text-lg md:text-xl">
-                {chapter.title}
+                {manhwaMode ? manhwaChapterLabel(chapter.slug, chapter.title) : chapter.title}
               </h1>
               {manhwaMode ? (
                 <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--reader-muted)]">
@@ -576,11 +611,18 @@ export function ChapterReader({ chapter, nav }: ChapterReaderProps) {
                   onChange={(event) => jumpToSlug(event.target.value)}
                   className="w-full min-w-0 rounded-full border border-[var(--reader-border)] bg-[var(--reader-bg)]/70 px-3 py-2 font-mono text-[11px] text-[var(--reader-fg)] outline-none ring-[var(--accent)]/40 focus:ring-2"
                 >
-                  {chapterSelectOptions.map((entry) => (
-                    <option key={entry.slug} value={entry.slug}>
-                      {entry.title.length > 96 ? `${entry.title.slice(0, 93)}...` : entry.title}
-                    </option>
-                  ))}
+                  {chapterSelectOptions.map((entry) => {
+                    const label = manhwaMode
+                      ? manhwaChapterLabel(entry.slug, entry.title)
+                      : entry.title.length > 96
+                        ? `${entry.title.slice(0, 93)}...`
+                        : entry.title;
+                    return (
+                      <option key={entry.slug} value={entry.slug}>
+                        {label}
+                      </option>
+                    );
+                  })}
                 </select>
               </label>
               {chapterQuery.trim() && chapterSelectOptions.length === 0 ? (
